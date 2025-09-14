@@ -1,13 +1,45 @@
 import 'package:codegamma_sih/presentation/view/alerts/moderate_alert.dart';
 import 'package:codegamma_sih/presentation/view/alerts/urgent_alert.dart';
+import 'package:codegamma_sih/presentation/view/home/widgets/calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/constants/app_colors.dart';
 
-class HomeContent extends StatelessWidget {
+class HomeContent extends StatefulWidget {
   const HomeContent({super.key});
 
-  // ----------------- Navigation (unchanged behavior) -----------------
+  @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent>
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _secretButtonController;
+  bool _showSecretFeatures = false;
+  int _secretTapCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+
+    _secretButtonController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _secretButtonController.dispose();
+    super.dispose();
+  }
+
   void _handleAlertButtonPress(BuildContext context, String alertType) {
     HapticFeedback.heavyImpact();
     Widget alertScreen;
@@ -36,76 +68,66 @@ class HomeContent extends StatelessWidget {
     );
   }
 
+  void _activateSecretMode() {
+    setState(() {
+      _showSecretFeatures = !_showSecretFeatures;
+    });
+    _secretButtonController.forward().then((_) {
+      _secretButtonController.reverse();
+    });
+    HapticFeedback.mediumImpact();
+  }
+
+  void _handleSecretTap() {
+    _secretTapCount++;
+    if (_secretTapCount >= 5) {
+      _activateSecretMode();
+      _secretTapCount = 0;
+    }
+    HapticFeedback.lightImpact();
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isTablet = size.width > 600;
 
     final statItems = [
-      _StatData('Total Animal Currently', '2,345', Icons.pets),
-      _StatData('Total Vaccinations This Month', '4,128', Icons.people),
-      _StatData('Total Vaccination Left', '1,230', Icons.medical_services),
-      _StatData('Next Vet Appointment', '11 Sept', Icons.science),
+      _StatData('Total Animals', '2,345', Icons.pets),
+      _StatData('Vaccinations Done', '4,128', Icons.vaccines),
+      _StatData('Health Checkups', '1,230', Icons.medical_services),
+      _StatData('Next Appointment', '11 Sept', Icons.schedule),
     ];
 
-    // Fake monthly transaction count (current month)
-    const monthlyTransactions = '38%';
+    const monthlyGrowth = '38%';
 
     final services = [
       _ServiceData('Owner\nManagement', Icons.person_add_outlined),
       _ServiceData('Animal\nManagement', Icons.pets_outlined),
       _ServiceData('Flock\nManagement', Icons.groups_outlined),
-      _ServiceData('Animal Health\nRecord', Icons.health_and_safety_outlined),
-      _ServiceData('Animal\nBreeding', Icons.favorite_border_outlined),
-      _ServiceData('PR', Icons.description_outlined),
-      _ServiceData('Animal\nNutrition', Icons.restaurant_outlined),
-      _ServiceData('Miscellaneous', Icons.more_horiz_outlined),
       _ServiceData('Disease\nTracking', Icons.coronavirus_outlined),
-      _ServiceData('Feed\nInventory', Icons.inventory_2_outlined),
       _ServiceData('Market\nPrices', Icons.trending_up_outlined),
-      _ServiceData('Reports', Icons.assessment_outlined),
+      _ServiceData('Reports\nAnalysis', Icons.assessment_outlined),
     ];
-    final activities = [
-      _ActivityData(
-        'Withdrawal Period Alert',
-        'Farm ID: F001 - Expires in 2 days',
-        Icons.warning_amber_outlined,
-        Colors.red,
-        true,
-      ),
-      _ActivityData(
-        'MRL Compliance Check',
-        'All levels within safe limits - Farm F089',
-        Icons.verified_outlined,
-        Colors.green,
-        false,
-      ),
-      _ActivityData(
-        'New AMU Record Added',
-        'Antimicrobial usage logged successfully',
-        Icons.add_circle_outline,
-        AppColors.primaryColor,
-        false,
-      ),
-      _ActivityData(
-        'Vaccination Reminder',
-        'Due for 15 animals in Farm F023',
-        Icons.schedule_outlined,
-        Colors.orange,
-        false,
-      ),
-    ];
+
+    // Sample upcoming events based on calendar
+    final upcomingEvents = _getUpcomingEvents();
 
     return CustomScrollView(
       slivers: [
-        // ----------------- Gradient Header with Horizontal Stats -----------------
+        // Enhanced Gradient Header
         SliverToBoxAdapter(
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.primaryColor, AppColors.primaryColorLight],
+                colors: [
+                  AppColors.primaryColor,
+                  AppColors.primaryColorLight,
+                  AppColors.primaryColor.withOpacity(0.8),
+                ],
+                stops: const [0.0, 0.6, 1.0],
               ),
             ),
             padding: EdgeInsets.fromLTRB(
@@ -117,49 +139,82 @@ class HomeContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(isTablet ? 16 : 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.22)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(10),
+                // Enhanced Growth Card
+                GestureDetector(
+                  onTap: _handleSecretTap,
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(isTablet ? 20 : 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.25)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
-                        child: Icon(
-                          Icons.swap_horiz,
-                          color: Colors.white,
-                          size: isTablet ? 20 : 18,
-                        ),
-                      ),
-                      SizedBox(width: isTablet ? 14 : 10),
-                      Expanded(
-                        child: Text(
-                          'This months sales increase',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: isTablet ? 15 : 13,
-                            fontWeight: FontWeight.w600,
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: AnimatedBuilder(
+                            animation: _pulseController,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: 1.0 + (_pulseController.value * 0.1),
+                                child: Icon(
+                                  Icons.trending_up_rounded,
+                                  color: Colors.white,
+                                  size: isTablet ? 24 : 20,
+                                ),
+                              );
+                            },
                           ),
                         ),
-                      ),
-                      Text(
-                        monthlyTransactions,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isTablet ? 24 : 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
+                        SizedBox(width: isTablet ? 16 : 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Monthly Growth',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: isTablet ? 16 : 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Health metrics improved',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: isTablet ? 13 : 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        Text(
+                          monthlyGrowth,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isTablet ? 28 : 24,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(height: isTablet ? 24 : 18),
@@ -169,7 +224,7 @@ class HomeContent extends StatelessWidget {
           ),
         ),
 
-        // ----------------- Quick Services -----------------
+        // Enhanced Quick Services (moved to appear after hero section)
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
             isTablet ? 32 : 20,
@@ -178,10 +233,9 @@ class HomeContent extends StatelessWidget {
             0,
           ),
           sliver: SliverToBoxAdapter(
-            child: _SectionHeader(label: 'Quick Service', isTablet: isTablet),
+            child: _SectionHeader(label: 'Quick Services', isTablet: isTablet),
           ),
         ),
-        // Uniform grid for services (all cards equal size)
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
             isTablet ? 32 : 20,
@@ -191,39 +245,41 @@ class HomeContent extends StatelessWidget {
           ),
           sliver: SliverLayoutBuilder(
             builder: (context, constraints) {
-              // Responsive 3-column layout (3x4 grid) with overflow protection
-              final width = constraints.crossAxisExtent;
-              int crossAxisCount;
-              if (width < 300) {
-                crossAxisCount = 2; // Very small screens: 2 columns
-              } else if (width < 480) {
-                crossAxisCount = 3; // Default: 3 columns (3x4 layout)
-              } else {
-                crossAxisCount = 3; // Keep 3 columns for larger screens too
-              }
-              final spacing = isTablet ? 14.0 : 10.0;
+              const crossAxisCount = 3; // 3x2 grid (3 columns, 2 rows)
+              final spacing = isTablet ? 16.0 : 15.0;
               return SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
                   mainAxisSpacing: spacing,
                   crossAxisSpacing: spacing,
-                  // Responsive aspect ratio for 3-column layout
-                  childAspectRatio: crossAxisCount == 2 ? 1.6 : 1.2,
+                  childAspectRatio: isTablet ? 1.3 : 1.2,
                 ),
                 delegate: SliverChildBuilderDelegate((context, index) {
-                  final s = services[index];
-                  return _ServiceCard(
-                    data: s,
+                  final service = services[index];
+                  return _EnhancedServiceCard(
+                    data: service,
                     isTablet: isTablet,
-                    onLongPress: () {
-                      if (s.title == 'Animal Health\nRecord') {
-                        _handleAlertButtonPress(context, 'urgent');
-                      } else if (s.title == 'Miscellaneous') {
-                        _handleAlertButtonPress(context, 'moderate');
-                      } else if (s.title == 'Disease\nTracking') {
-                        _handleAlertButtonPress(context, 'urgent');
+                    showSecret: _showSecretFeatures,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      // Handle service tap
+                      if (service.title == 'Disease\nTracking') {
+                        Navigator.pushNamed(context, '/disease-tracking');
+                      } else if (service.title == 'Market\nPrices') {
+                        Navigator.pushNamed(context, '/market-prices');
                       }
-                      // Add more long press actions here for new cards if needed
+                    },
+                    onLongPress: () {
+                      if (service.title == 'Animal\nManagement') {
+                        _handleAlertButtonPress(context, 'urgent');
+                      } else if (service.title == 'Disease\nTracking') {
+                        _handleAlertButtonPress(context, 'moderate');
+                      }
+                    },
+                    onDoubleTap: () {
+                      if (service.title == 'Reports') {
+                        _activateSecretMode();
+                      }
                     },
                   );
                 }, childCount: services.length),
@@ -232,6 +288,40 @@ class HomeContent extends StatelessWidget {
           ),
         ),
 
+        // Calendar Section (moved to appear after Quick Services)
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            isTablet ? 32 : 20,
+            isTablet ? 30 : 26,
+            isTablet ? 32 : 20,
+            0,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: _SectionHeader(label: 'Health Calendar', isTablet: isTablet),
+          ),
+        ),
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(
+            isTablet ? 32 : 20,
+            isTablet ? 14 : 12,
+            isTablet ? 32 : 20,
+            0,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: CustomCalendar(
+              isTablet: isTablet,
+              onDateTapped: (date, event) {
+                _showEventDetails(
+                  context,
+                  date,
+                  event as List<Map<String, dynamic>>?,
+                );
+              },
+            ),
+          ),
+        ),
+
+        // Upcoming Events (previously Recent Activity)
         SliverPadding(
           padding: EdgeInsets.fromLTRB(
             isTablet ? 32 : 20,
@@ -240,7 +330,7 @@ class HomeContent extends StatelessWidget {
             0,
           ),
           sliver: SliverToBoxAdapter(
-            child: _SectionHeader(label: 'Recent Activity', isTablet: isTablet),
+            child: _SectionHeader(label: 'Upcoming Events', isTablet: isTablet),
           ),
         ),
         SliverPadding(
@@ -252,17 +342,573 @@ class HomeContent extends StatelessWidget {
           ),
           sliver: SliverToBoxAdapter(
             child: _ActivityTimeline(
-              activities: activities,
+              activities: upcomingEvents,
               isTablet: isTablet,
             ),
           ),
         ),
+
+        // Secret Features Panel
+        if (_showSecretFeatures)
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              isTablet ? 32 : 20,
+              0,
+              isTablet ? 32 : 20,
+              isTablet ? 40 : 32,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: AnimatedBuilder(
+                animation: _secretButtonController,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: 1.0 + (_secretButtonController.value * 0.05),
+                    child: _SecretPanel(isTablet: isTablet),
+                  );
+                },
+              ),
+            ),
+          ),
       ],
+    );
+  }
+
+  List<_ActivityData> _getUpcomingEvents() {
+    final now = DateTime.now();
+    return [
+      _ActivityData(
+        'Vaccination Schedule',
+        'Cattle ID: C001-C015 - FMD vaccine due today',
+        Icons.vaccines_outlined,
+        Colors.blue,
+        true,
+        now,
+      ),
+      _ActivityData(
+        'Health Checkup',
+        'Monthly health assessment for Farm F089',
+        Icons.health_and_safety_outlined,
+        Colors.green,
+        false,
+        now.add(const Duration(days: 1)),
+      ),
+      _ActivityData(
+        'Deworming Treatment',
+        'Scheduled for 25 cattle in Block A',
+        Icons.medical_services_outlined,
+        Colors.orange,
+        false,
+        now.add(const Duration(days: 2)),
+      ),
+      _ActivityData(
+        'Feed Quality Check',
+        'Nutritional analysis and feed inspection',
+        Icons.restaurant_outlined,
+        AppColors.primaryColor,
+        false,
+        now.add(const Duration(days: 3)),
+      ),
+    ];
+  }
+
+  void _showEventDetails(
+    BuildContext context,
+    DateTime date,
+    List<Map<String, dynamic>>? events,
+  ) {
+    if (events == null || events.isEmpty) return;
+
+    HapticFeedback.mediumImpact();
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.9,
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primaryColor,
+                      AppColors.primaryColorLight,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.calendar_today,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${date.day}/${date.month}/${date.year}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            '${events.length} event${events.length > 1 ? 's' : ''} scheduled',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Events List
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(20),
+                  itemCount: events.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final event = events[index];
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: (event['color'] as Color).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: (event['color'] as Color).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: (event['color'] as Color).withOpacity(
+                                0.15,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              event['icon'],
+                              color: event['color'],
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        event['title'],
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primaryTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: event['color'],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        event['time'],
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  event['description'],
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.secondaryTextColor,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                if (event['type'] != null) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: (event['color'] as Color)
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      event['type'].toString().toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: event['color'],
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: AppColors.primaryColor,
+                        ),
+                        child: Text(
+                          'Close',
+                          style: TextStyle(
+                            color: AppColors.whiteColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
-// ===================== Data Models (lightweight) =====================
+// Enhanced Service Card
+class _EnhancedServiceCard extends StatefulWidget {
+  final _ServiceData data;
+  final bool isTablet;
+  final bool showSecret;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final VoidCallback onDoubleTap;
+
+  const _EnhancedServiceCard({
+    required this.data,
+    required this.isTablet,
+    required this.showSecret,
+    required this.onTap,
+    required this.onLongPress,
+    required this.onDoubleTap,
+  });
+
+  @override
+  State<_EnhancedServiceCard> createState() => _EnhancedServiceCardState();
+}
+
+class _EnhancedServiceCardState extends State<_EnhancedServiceCard>
+    with SingleTickerProviderStateMixin {
+  bool _pressed = false;
+  late AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    if (widget.showSecret) {
+      _shimmerController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_EnhancedServiceCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.showSecret != oldWidget.showSecret) {
+      if (widget.showSecret) {
+        _shimmerController.repeat();
+      } else {
+        _shimmerController.stop();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      onDoubleTap: widget.onDoubleTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.identity()..scale(_pressed ? 0.95 : 1.0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          border: Border.all(
+            color: widget.showSecret
+                ? AppColors.primaryColor.withOpacity(0.6)
+                : Colors.grey.withOpacity(0.15),
+            width: widget.showSecret ? 2 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(_pressed ? 0.08 : 0.04),
+              blurRadius: _pressed ? 4 : 6,
+              offset: Offset(0, _pressed ? 1 : 2),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.all(widget.isTablet ? 4 : 3),
+        child: Stack(
+          children: [
+            if (widget.showSecret)
+              AnimatedBuilder(
+                animation: _shimmerController,
+                builder: (context, child) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        begin: Alignment(-1.0, -0.3),
+                        end: Alignment(1.0, 0.3),
+                        colors: [
+                          Colors.transparent,
+                          AppColors.primaryColor.withOpacity(0.1),
+                          Colors.transparent,
+                        ],
+                        stops: [
+                          _shimmerController.value - 0.3,
+                          _shimmerController.value,
+                          _shimmerController.value + 0.3,
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Simplified icon container
+                  Container(
+                    height: widget.isTablet ? 40 : 36,
+                    width: widget.isTablet ? 40 : 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryColor.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        widget.data.icon,
+                        color: Colors.white,
+                        size: widget.isTablet ? 20 : 20,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: widget.isTablet ? 6 : 4),
+                  // Simplified text layout
+                  Flexible(
+                    child: Container(
+                      width: double.infinity,
+                      child: Text(
+                        widget.data.title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: widget.isTablet ? 11 : 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryTextColor,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (widget.showSecret)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.5),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Secret Features Panel
+class _SecretPanel extends StatelessWidget {
+  final bool isTablet;
+  const _SecretPanel({required this.isTablet});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.red.withOpacity(0.1), Colors.orange.withOpacity(0.1)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.admin_panel_settings,
+                color: Colors.red,
+                size: isTablet ? 24 : 20,
+              ),
+              SizedBox(width: isTablet ? 12 : 8),
+              Text(
+                'Admin Panel Activated',
+                style: TextStyle(
+                  fontSize: isTablet ? 18 : 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isTablet ? 16 : 12),
+          Text(
+            'Secret features unlocked! Long press Animal Management for urgent alerts, double tap Reports for admin mode.',
+            style: TextStyle(
+              fontSize: isTablet ? 14 : 12,
+              color: AppColors.secondaryTextColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Enhanced Data Models
 class _StatData {
   final String label;
   final String value;
@@ -273,7 +919,8 @@ class _StatData {
 class _ServiceData {
   final String title;
   final IconData icon;
-  _ServiceData(this.title, this.icon);
+  final String subtitle;
+  _ServiceData(this.title, this.icon, {this.subtitle = ''});
 }
 
 class _ActivityData {
@@ -282,14 +929,24 @@ class _ActivityData {
   final IconData icon;
   final Color color;
   final bool urgent;
-  _ActivityData(this.title, this.subtitle, this.icon, this.color, this.urgent);
+  final DateTime scheduledDate;
+
+  _ActivityData(
+    this.title,
+    this.subtitle,
+    this.icon,
+    this.color,
+    this.urgent,
+    this.scheduledDate,
+  );
 }
 
-// ===================== Reusable Section Header =====================
+// Enhanced Section Header
 class _SectionHeader extends StatelessWidget {
   final String label;
   final bool isTablet;
   const _SectionHeader({required this.label, required this.isTablet});
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -297,9 +954,13 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Container(
           width: 6,
-          height: isTablet ? 28 : 24,
+          height: isTablet ? 32 : 28,
           decoration: BoxDecoration(
-            color: AppColors.primaryColor,
+            gradient: LinearGradient(
+              colors: [AppColors.primaryColor, AppColors.primaryColorLight],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -307,10 +968,10 @@ class _SectionHeader extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: isTablet ? 22 : 18,
-            fontWeight: FontWeight.w600,
+            fontSize: isTablet ? 24 : 20,
+            fontWeight: FontWeight.w700,
             color: AppColors.primaryTextColor,
-            letterSpacing: 0.2,
+            letterSpacing: 0.3,
           ),
         ),
       ],
@@ -318,28 +979,34 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ===================== Statistics Summary Card (no horizontal scroll) =====================
+// Enhanced Stats Summary Card
 class _StatsSummaryCard extends StatelessWidget {
   final List<_StatData> items;
   final bool isTablet;
   const _StatsSummaryCard({required this.items, required this.isTablet});
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      padding: EdgeInsets.all(isTablet ? 24 : 20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.22)),
+        color: Colors.white.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Fixed 2x2 layout
-          final maxWidth = constraints.maxWidth;
           const crossAxisCount = 2;
-          final spacing = isTablet ? 20.0 : 14.0;
-          final itemWidth = (maxWidth - spacing) / crossAxisCount;
+          final spacing = isTablet ? 20.0 : 16.0;
+          final itemWidth = (constraints.maxWidth - spacing) / crossAxisCount;
           return Column(
             children: [
               Row(
@@ -381,29 +1048,30 @@ class _SingleStat extends StatelessWidget {
   final _StatData data;
   final bool isTablet;
   const _SingleStat({required this.data, required this.isTablet});
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(isTablet ? 14 : 12),
+      padding: EdgeInsets.all(isTablet ? 16 : 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.20)),
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.25)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.all(isTablet ? 10 : 8),
+            padding: EdgeInsets.all(isTablet ? 12 : 10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.25)),
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withOpacity(0.3)),
             ),
             child: Icon(
               data.icon,
               color: Colors.white,
-              size: isTablet ? 22 : 18,
+              size: isTablet ? 24 : 20,
             ),
           ),
           SizedBox(width: isTablet ? 12 : 10),
@@ -415,20 +1083,20 @@ class _SingleStat extends StatelessWidget {
                   data.value,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: isTablet ? 24 : 20,
-                    fontWeight: FontWeight.w700,
+                    fontSize: isTablet ? 26 : 19,
+                    fontWeight: FontWeight.w800,
                     height: 1,
-                    letterSpacing: 0.3,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   data.label,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: isTablet ? 12.5 : 11,
-                    fontWeight: FontWeight.w500,
-                    height: 1.15,
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: isTablet ? 13 : 10,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -442,119 +1110,32 @@ class _SingleStat extends StatelessWidget {
   }
 }
 
-// ===================== Service Card =====================
-class _ServiceCard extends StatefulWidget {
-  final _ServiceData data;
-  final bool isTablet;
-  final VoidCallback onLongPress;
-  const _ServiceCard({
-    required this.data,
-    required this.isTablet,
-    required this.onLongPress,
-  });
-
-  @override
-  State<_ServiceCard> createState() => _ServiceCardState();
-}
-
-class _ServiceCardState extends State<_ServiceCard> {
-  bool _pressed = false;
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onLongPress: widget.onLongPress,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        transform: Matrix4.identity()..scale(_pressed ? 0.97 : 1.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.withOpacity(0.2), width: 0.8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: widget.isTablet ? 8 : 5,
-          vertical: widget.isTablet ? 8 : 6,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: widget.isTablet ? 40 : 36,
-              width: widget.isTablet ? 40 : 36,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primaryColor,
-                    AppColors.primaryColor.withOpacity(0.85),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                widget.data.icon,
-                color: Colors.white,
-                size: widget.isTablet ? 22 : 20,
-              ),
-            ),
-            SizedBox(height: widget.isTablet ? 6 : 5),
-            Text(
-              widget.data.title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: widget.isTablet ? 11 : 10,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryTextColor,
-                height: 1.1,
-                letterSpacing: 0,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ===================== Activity Timeline =====================
+// Enhanced Activity Timeline
 class _ActivityTimeline extends StatelessWidget {
   final List<_ActivityData> activities;
   final bool isTablet;
   const _ActivityTimeline({required this.activities, required this.isTablet});
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.withOpacity(0.28)),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       padding: EdgeInsets.fromLTRB(
+        isTablet ? 24 : 20,
         isTablet ? 20 : 16,
-        isTablet ? 18 : 14,
-        isTablet ? 20 : 16,
-        isTablet ? 10 : 8,
+        isTablet ? 24 : 20,
+        isTablet ? 12 : 10,
       ),
       child: Column(
         children: [
@@ -580,47 +1161,69 @@ class _ActivityTile extends StatelessWidget {
     required this.isTablet,
     required this.isLast,
   });
+
   @override
   Widget build(BuildContext context) {
+    final daysUntil = data.scheduledDate.difference(DateTime.now()).inDays;
+    String timeText;
+    if (daysUntil == 0) {
+      timeText = 'Today';
+    } else if (daysUntil == 1) {
+      timeText = 'Tomorrow';
+    } else {
+      timeText = '${daysUntil}d';
+    }
+
     return SizedBox(
-      height: isTablet ? 82 : 70,
+      height: isTablet ? 88 : 76,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline axis
+          // Enhanced Timeline axis
           SizedBox(
-            width: 34,
+            width: 38,
             child: Stack(
               children: [
                 Positioned(
-                  left: 15,
+                  left: 17,
                   top: 0,
-                  bottom: isLast ? 30 : 0,
+                  bottom: isLast ? 35 : 0,
                   child: Container(
-                    width: 2,
+                    width: 3,
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.35),
+                      gradient: LinearGradient(
+                        colors: [
+                          data.color.withOpacity(0.3),
+                          Colors.grey.withOpacity(0.2),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 Positioned(
-                  left: 6,
-                  top: 6,
+                  left: 8,
+                  top: 8,
                   child: Container(
-                    width: isTablet ? 20 : 18,
-                    height: isTablet ? 20 : 18,
+                    width: isTablet ? 22 : 20,
+                    height: isTablet ? 22 : 20,
                     decoration: BoxDecoration(
-                      color: data.color.withOpacity(0.14),
+                      color: data.color.withOpacity(0.15),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: data.color.withOpacity(0.55),
-                        width: 1.5,
-                      ),
+                      border: Border.all(color: data.color, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: data.color.withOpacity(0.3),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ),
                     child: Icon(
                       data.icon,
-                      size: isTablet ? 12 : 11,
+                      size: isTablet ? 13 : 12,
                       color: data.color,
                     ),
                   ),
@@ -628,7 +1231,7 @@ class _ActivityTile extends StatelessWidget {
               ],
             ),
           ),
-          // Content
+          // Enhanced Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -640,58 +1243,92 @@ class _ActivityTile extends StatelessWidget {
                       child: Text(
                         data.title,
                         style: TextStyle(
-                          fontSize: isTablet ? 15.5 : 13.5,
-                          fontWeight: FontWeight.w600,
+                          fontSize: isTablet ? 16.5 : 14.5,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.primaryTextColor,
-                          height: 1.15,
+                          height: 1.2,
                         ),
                       ),
                     ),
-                    SizedBox(width: isTablet ? 10 : 8),
-                    Text(
-                      '2h ago',
-                      style: TextStyle(
-                        fontSize: isTablet ? 11 : 9.5,
-                        color: AppColors.mutedTextColor,
+                    SizedBox(width: isTablet ? 12 : 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: data.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: data.color.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        timeText,
+                        style: TextStyle(
+                          fontSize: isTablet ? 11 : 10,
+                          fontWeight: FontWeight.w600,
+                          color: data.color,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: isTablet ? 6 : 4),
+                SizedBox(height: isTablet ? 8 : 6),
                 Text(
                   data.subtitle,
                   style: TextStyle(
-                    fontSize: isTablet ? 13 : 11.5,
+                    fontSize: isTablet ? 14 : 12,
                     color: AppColors.secondaryTextColor,
-                    height: 1.2,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 if (!isLast)
-                  Divider(
-                    height: isTablet ? 22 : 18,
-                    thickness: 0.6,
-                    color: Colors.grey.withOpacity(0.35),
+                  Padding(
+                    padding: EdgeInsets.only(top: isTablet ? 16 : 12),
+                    child: Container(
+                      height: 1,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.grey.withOpacity(0.3),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),
           ),
           if (data.urgent)
             Padding(
-              padding: const EdgeInsets.only(left: 6, top: 4),
+              padding: const EdgeInsets.only(left: 8, top: 6),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.red.withOpacity(0.5)),
+                  gradient: LinearGradient(
+                    colors: [Colors.red, Colors.red.withOpacity(0.8)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Text(
                   'URGENT',
                   style: TextStyle(
-                    fontSize: isTablet ? 10.5 : 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: Colors.red,
+                    fontSize: isTablet ? 10.5 : 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                    color: Colors.white,
                   ),
                 ),
               ),

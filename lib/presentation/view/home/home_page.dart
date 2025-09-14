@@ -19,7 +19,7 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = [
     const HomeContent(),
     const AnalyticsPage(),
-    const HomeContent(), // Placeholder - scanner opens as full screen
+    const HomeContent(),
     const AlertsPage(),
     const ProfilePage(),
   ];
