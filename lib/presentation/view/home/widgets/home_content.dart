@@ -102,9 +102,9 @@ class _HomeContentState extends State<HomeContent>
     const monthlyGrowth = '38%';
 
     final services = [
-      _ServiceData('Owner\nManagement', Icons.person_add_outlined),
+      _ServiceData('Owner\nManagement', Icons.person),
       _ServiceData('Animal\nManagement', Icons.pets_outlined),
-      _ServiceData('Flock\nManagement', Icons.groups_outlined),
+      _ServiceData('Risk\nPrediction', Icons.groups_outlined),
       _ServiceData('Disease\nTracking', Icons.coronavirus_outlined),
       _ServiceData('Market\nPrices', Icons.trending_up_outlined),
       _ServiceData('Reports\nAnalysis', Icons.assessment_outlined),
@@ -267,6 +267,12 @@ class _HomeContentState extends State<HomeContent>
                         Navigator.pushNamed(context, '/disease-tracking');
                       } else if (service.title == 'Market\nPrices') {
                         Navigator.pushNamed(context, '/market-prices');
+                      } else if (service.title == 'Owner\nManagement') {
+                        Navigator.pushNamed(context, '/owner-management');
+                      } else if (service.title == 'Animal\nManagement') {
+                        Navigator.pushNamed(context, '/animal-management');
+                      } else if (service.title == 'Risk\nPrediction') {
+                        Navigator.pushNamed(context, '/risk-prediction');
                       }
                     },
                     onLongPress: () {

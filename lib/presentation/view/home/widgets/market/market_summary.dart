@@ -12,7 +12,7 @@ class MarketSummaryWidget extends StatelessWidget {
     required this.totalValue,
     required this.dailyChange,
     required this.weeklyChange,
-    required this.isTablet,
+    required this.isTablet, required double monthlyChange,
   });
 
   @override
@@ -135,7 +135,7 @@ class _ChangeIndicator extends StatelessWidget {
             children: [
               Icon(
                 isPositive ? Icons.trending_up : Icons.trending_down,
-                color: isPositive ? Colors.green.shade300 : Colors.red.shade300,
+                color: isPositive ? Colors.white : Colors.red.shade300,
                 size: isTablet ? 20 : 18,
               ),
               const SizedBox(width: 4),
@@ -143,7 +143,7 @@ class _ChangeIndicator extends StatelessWidget {
                 '${isPositive ? '+' : ''}${value.toStringAsFixed(1)}%',
                 style: TextStyle(
                   color: isPositive
-                      ? Colors.green.shade300
+                      ? Colors.white
                       : Colors.red.shade300,
                   fontSize: isTablet ? 18 : 16,
                   fontWeight: FontWeight.w700,

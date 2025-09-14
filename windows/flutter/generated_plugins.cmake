@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   flutter_tts
+  geolocator_windows
   maps_launcher
   permission_handler_windows
   speech_to_text_windows
