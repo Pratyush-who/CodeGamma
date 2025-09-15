@@ -1,7 +1,7 @@
-// Updated Cow Details Page with Voice Chat Navigation
-import 'package:codegamma_sih/presentation/view/voice_chat/voice_chat.dart';
-import 'package:codegamma_sih/core/models/cow_details.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../core/constants/app_colors.dart';
 
 class CowDetailsPage extends StatefulWidget {
@@ -14,301 +14,150 @@ class CowDetailsPage extends StatefulWidget {
 }
 
 class _CowDetailsPageState extends State<CowDetailsPage> {
-  // Add your Gemini API key here
-  static const String GEMINI_API_KEY =
-      'AIzaSyA1IJ3ICYjRPZGdQheZCrbZeoVN_SoOtbs'; // Replace with your actual API key
+  Map<String, dynamic>? animalData;
+  bool isLoading = true;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAnimalData();
+  }
+
+  Future<void> _fetchAnimalData() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/animal/${widget.tagId}'),
+        headers: {'accept': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          animalData = jsonDecode(response.body);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          error = 'Failed to load animal data';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        error = 'Network error: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  void _navigateToMRLAnalyzer() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MRLAnalyzerPage(tagId: widget.tagId),
+      ),
+    );
+  }
+
+  void _navigateToAmuAnalyzer() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AmuAnalyzerPage(tagId: widget.tagId),
+      ),
+    );
+  }
+
+  void _navigateToPrescriptionChecker() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PrescriptionCheckerPage(tagId: widget.tagId),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primaryColor, AppColors.primaryColorLight],
-            ),
-          ),
-        ),
+        backgroundColor: AppColors.primaryColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            // Navigate back to home page and remove all previous routes
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          '${widget.tagId}',
+          'Animal Details - ${widget.tagId}',
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
+        centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Cow Image Section
-            Container(
-              width: double.infinity,
-              height: 250,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primaryColorLight.withOpacity(0.1),
-                    AppColors.backgroundColor,
-                  ],
-                ),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
               ),
-              child: Center(
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      'https://www.dial4trade.com/uploaded_files/product_images/thumbs/red-sindhi-cow-1839559468280.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: AppColors.lightGreen,
-                          child: const Icon(
-                            Icons.pets,
-                            size: 64,
-                            color: AppColors.primaryColor,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Details Sections
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildDetailCard('Basic Information', Icons.info_outline, [
-                    _buildDetailRow('Tag ID', widget.tagId),
-                    _buildDetailRow('Breed', 'Red Sindhi'),
-                    _buildDetailRow('Age', '3 years 2 months'),
-                    _buildDetailRow('Weight', '650 kg'),
-                    _buildDetailRow('Gender', 'Female'),
-                    _buildDetailRow('Status', 'Healthy', isStatus: true),
-                  ]),
-
-                  const SizedBox(height: 16),
-
-                  _buildDetailCard(
-                    'Antimicrobial Usage & Safety',
-                    Icons.medication_outlined,
-                    [
-                      _buildDetailRow('Last Treatment', '15 days ago'),
-                      _buildDetailRow('Medication', 'Penicillin G'),
-                      _buildDetailRow('Dosage', '20 ml intramuscular'),
-                      _buildDetailRow(
-                        'Withdrawal Period',
-                        '7 days (Completed)',
-                      ),
-                      _buildDetailRow(
-                        'Next Treatment Due',
-                        'No active treatment',
-                      ),
-                      _buildDetailRow(
-                        'Milk Usage',
-                        'Safe for consumption',
-                        isStatus: true,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  _buildDetailCard(
-                    'Health Monitoring',
-                    Icons.favorite_outline,
-                    [
-                      _buildDetailRow('Last Checkup', '2 days ago'),
-                      _buildDetailRow('Temperature', '101.2°F (Normal)'),
-                      _buildDetailRow('Heart Rate', '78 bpm'),
-                      _buildDetailRow('Respiration Rate', '22 breaths/min'),
-                      _buildDetailRow('Milk Production', '25 L/day'),
-                      _buildDetailRow('Nutrition Level', 'Adequate'),
-                      _buildDetailRow('Body Condition Score', '3.5/5 (Good)'),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  _buildDetailCard(
-                    'Compliance & Records',
-                    Icons.assignment_outlined,
-                    [
-                      _buildDetailRow('Owner', 'Rajesh Kumar'),
-                      _buildDetailRow('Farm Location', 'Village Rampur, UP'),
-                      _buildDetailRow(
-                        'Compliance Status',
-                        'Compliant',
-                        isStatus: true,
-                      ),
-                      _buildDetailRow('Last Inspection', '1 month ago'),
-                      _buildDetailRow('Registration ID', 'UP-2024-001234'),
-                      _buildDetailRow(
-                        'Blockchain Verified',
-                        'Yes',
-                        isStatus: true,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  _buildDetailCard(
-                    'Usage Advisory',
-                    Icons.warning_amber_outlined,
-                    [
-                      _buildDetailRow(
-                        'Milk Usage',
-                        'Fit for daily consumption',
-                      ),
-                      _buildDetailRow(
-                        'Medication Note',
-                        'No antibiotics within last 7 days',
-                      ),
-                      _buildDetailRow('Recommended Checkup', 'Every 30 days'),
-                      _buildDetailRow('Vaccination Status', 'Up to date'),
-                      _buildDetailRow(
-                        'Heat Stress Risk',
-                        'Low – Good ventilation',
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Action Buttons
-                  Row(
+            )
+          : error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: _buildActionButton(
-                          'Generate Report',
-                          Icons.description_outlined,
-                          AppColors.primaryColor,
-                          () {
-                            _showSnackBar('Generating compliance report...');
-                          },
-                        ),
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red[400],
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildActionButton(
-                          'Ask Queries',
-                          Icons.question_answer,
-                          AppColors.accentGreen,
-                          () {
-                            _navigateToVoiceChat();
-                          },
+                      const SizedBox(height: 16),
+                      Text(
+                        error!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: AppColors.primaryTextColor,
                         ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            isLoading = true;
+                            error = null;
+                          });
+                          _fetchAnimalData();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryColor,
+                        ),
+                        child: const Text('Retry'),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 16),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: _buildActionButton(
-                      'View Past Records',
-                      Icons.history,
-                      AppColors.darkGreen,
-                      () {
-                        _showSnackBar('Opening detailed history...');
-                      },
-                    ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildAnimalDataCard(),
+                      const SizedBox(height: 16),
+                      _buildAnalysisOptionsGrid(),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+                ),
     );
   }
 
-  void _navigateToVoiceChat() {
-    if (GEMINI_API_KEY == 'YOUR_GEMINI_API_KEY_HERE' ||
-        GEMINI_API_KEY.isEmpty) {
-      _showSnackBar('Please set your Gemini API key in the code');
-      return;
-    }
-    // Build the cow details context object
-    final details = CowDetails(
-      tagId: widget.tagId,
-      breed: 'Red Sindhi',
-      age: '3 years 2 months',
-      weight: '650 kg',
-      gender: 'Female',
-      status: 'Healthy',
-      lastTreatment: '15 days ago',
-      medication: 'Penicillin G',
-      dosage: '20 ml intramuscular',
-      withdrawalPeriod: '7 days (Completed)',
-      nextTreatmentDue: 'No active treatment',
-      milkUsage: 'Safe for consumption',
-      lastCheckup: '2 days ago',
-      temperature: '101.2°F (Normal)',
-      heartRate: '78 bpm',
-      respirationRate: '22 breaths/min',
-      milkProduction: '25 L/day',
-      nutritionLevel: 'Adequate',
-      bodyConditionScore: '3.5/5 (Good)',
-      owner: 'Rajesh Kumar',
-      farmLocation: 'Village Rampur, UP',
-      complianceStatus: 'Compliant',
-      lastInspection: '1 month ago',
-      registrationId: 'UP-2024-001234',
-      blockchainVerified: 'Yes',
-      usageMilkStatus: 'Fit for daily consumption',
-      medicationNote: 'No antibiotics within last 7 days',
-      recommendedCheckup: 'Every 30 days',
-      vaccinationStatus: 'Up to date',
-      heatStressRisk: 'Low – Good ventilation',
-    );
-
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => VoiceChatPage(
-          tagId: widget.tagId,
-          geminiApiKey: GEMINI_API_KEY,
-          cowDetails: details,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailCard(String title, IconData icon, List<Widget> children) {
+  Widget _buildAnimalDataCard() {
     return Container(
       width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
@@ -323,71 +172,73 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primaryColor.withOpacity(0.1),
-                  AppColors.primaryColorLight.withOpacity(0.05),
-                ],
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: AppColors.primaryColor, size: 24),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryTextColor,
-                  ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
+                child: const Icon(
+                  Icons.pets,
+                  color: AppColors.primaryColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Animal Overview',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryTextColor,
+                      ),
+                    ),
+                    Text(
+                      'Tag: ${widget.tagId}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.secondaryTextColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(children: children),
-          ),
+          const SizedBox(height: 20),
+          if (animalData != null) ...[
+            _buildInfoRow('Breed', animalData!['basicInfo']['breed']),
+            _buildInfoRow('Gender', animalData!['basicInfo']['gender']),
+            _buildInfoRow('Farm ID', animalData!['basicInfo']['farmId']),
+            _buildInfoRow('Date of Admission', animalData!['basicInfo']['dateOfAdmission']),
+            const SizedBox(height: 16),
+            _buildComplianceStatus(),
+            const SizedBox(height: 16),
+            _buildHealthStatus(),
+            const SizedBox(height: 16),
+            _buildRecordCounts(),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isStatus = false}) {
-    Color valueColor = AppColors.primaryTextColor;
-    if (isStatus) {
-      if (value.toLowerCase().contains('healthy') ||
-          value.toLowerCase().contains('compliant') ||
-          value.toLowerCase().contains('yes') ||
-          value.toLowerCase().contains('up to date') ||
-          value.toLowerCase().contains('safe')) {
-        valueColor = AppColors.accentGreen;
-      } else if (value.toLowerCase().contains('warning')) {
-        valueColor = Colors.orange;
-      } else if (value.toLowerCase().contains('critical')) {
-        valueColor = Colors.red;
-      }
-    }
-
+  Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
             child: Text(
-              label,
+              '$label:',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -395,17 +246,12 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
               ),
             ),
           ),
-          const Text(
-            ': ',
-            style: TextStyle(color: AppColors.secondaryTextColor),
-          ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: valueColor,
+                color: AppColors.primaryTextColor,
               ),
             ),
           ),
@@ -414,41 +260,819 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
     );
   }
 
-  Widget _buildActionButton(
-    String text,
-    IconData icon,
-    Color color,
-    VoidCallback onPressed,
-  ) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
+  Widget _buildComplianceStatus() {
+    final complianceStatus = animalData!['basicInfo']['complianceStatus'];
+    final isCompliant = complianceStatus['status'] == 'OK';
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isCompliant ? AppColors.accentGreen.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isCompliant ? AppColors.accentGreen : Colors.red,
+          width: 1,
+        ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 20),
+          Icon(
+            isCompliant ? Icons.check_circle : Icons.warning,
+            color: isCompliant ? AppColors.accentGreen : Colors.red,
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Text(
-            text,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            'Compliance: ${complianceStatus['status']}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isCompliant ? AppColors.accentGreen : Colors.red,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            'Updated: ${complianceStatus['lastUpdated']}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.mutedTextColor,
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primaryColor,
-        duration: const Duration(seconds: 2),
+  Widget _buildHealthStatus() {
+    final healthStatus = animalData!['healthStatus'];
+    final lastVisit = healthStatus['lastVisit'];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Health Status',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primaryTextColor,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _buildHealthIndicator('Vaccination', healthStatus['vaccination']),
+            const SizedBox(width: 16),
+            _buildHealthIndicator('Insurance', healthStatus['insurance']),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.lightGreen,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Last Visit',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Dr. ${lastVisit['doctorName']} - ${lastVisit['date']}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.secondaryTextColor,
+                ),
+              ),
+              Text(
+                'Purpose: ${lastVisit['purpose']}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.secondaryTextColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHealthIndicator(String label, bool status) {
+    return Row(
+      children: [
+        Icon(
+          status ? Icons.check_circle : Icons.cancel,
+          color: status ? AppColors.accentGreen : Colors.red,
+          size: 16,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.secondaryTextColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecordCounts() {
+    final recordCounts = animalData!['recordCounts'];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Medical Records',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primaryTextColor,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildRecordCountItem('Prescriptions', recordCounts['prescriptions']),
+            _buildRecordCountItem('Treatments', recordCounts['treatments']),
+            _buildRecordCountItem('Doctor Visits', recordCounts['doctorVisits']),
+            _buildRecordCountItem('History', recordCounts['historyEntries']),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecordCountItem(String label, int count) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            count.toString(),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryColor,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.secondaryTextColor,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalysisOptionsGrid() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Analysis Tools',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryTextColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 1.2,
+          children: [
+            _buildAnalysisCard(
+              'MRL Analyzer',
+              'Maximum Residue Limits analysis for food safety compliance',
+              Icons.science,
+              AppColors.accentGreen,
+              _navigateToMRLAnalyzer,
+            ),
+            _buildAnalysisCard(
+              'AMU Analyzer',
+              'Antimicrobial Usage analysis and monitoring',
+              Icons.medication,
+              AppColors.secondaryGreen,
+              _navigateToAmuAnalyzer,
+            ),
+            _buildAnalysisCard(
+              'Prescription Checker',
+              'Verify prescriptions and drug interactions',
+              Icons.assignment,
+              AppColors.darkGreen,
+              _navigateToPrescriptionChecker,
+            ),
+            _buildAnalysisCard(
+              'Health Reports',
+              'Generate comprehensive health and compliance reports',
+              Icons.assessment,
+              AppColors.primaryColor,
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Health Reports feature coming soon!')),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalysisCard(
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            color: color.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryTextColor,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: Text(
+                description,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.secondaryTextColor,
+                  height: 1.3,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// MRL Analyzer Page
+class MRLAnalyzerPage extends StatefulWidget {
+  final String tagId;
+
+  const MRLAnalyzerPage({super.key, required this.tagId});
+
+  @override
+  State<MRLAnalyzerPage> createState() => _MRLAnalyzerPageState();
+}
+
+class _MRLAnalyzerPageState extends State<MRLAnalyzerPage> {
+  String selectedTissue = 'muscle';
+  int daysSinceTreatment = 0;
+  Map<String, dynamic>? analysisResult;
+  bool isLoading = false;
+  String? error;
+
+  final List<String> tissueOptions = ['muscle', 'milk', 'eggs', 'liver', 'kidney'];
+
+  Future<void> _analyzeMRL() async {
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$selectedTissue&days_since_treatment=$daysSinceTreatment'),
+        headers: {'accept': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          analysisResult = jsonDecode(response.body);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          error = 'Failed to analyze MRL data';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        error = 'Network error: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: AppColors.accentGreen,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'MRL Analyzer',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildParameterCard(),
+            const SizedBox(height: 16),
+            _buildAnalyzeButton(),
+            if (analysisResult != null) ...[
+              const SizedBox(height: 24),
+              _buildResultCard(),
+            ],
+            if (error != null) ...[
+              const SizedBox(height: 24),
+              _buildErrorCard(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParameterCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.accentGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.science,
+                  color: AppColors.accentGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'MRL Analysis Parameters',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryTextColor,
+                    ),
+                  ),
+                  Text(
+                    'Tag: ${widget.tagId}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.secondaryTextColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Target Tissue',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryTextColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.mutedTextColor),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedTissue,
+                items: tissueOptions.map((tissue) {
+                  return DropdownMenuItem<String>(
+                    value: tissue,
+                    child: Text(tissue.toUpperCase()),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedTissue = value!;
+                  });
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Days Since Treatment',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryTextColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            initialValue: daysSinceTreatment.toString(),
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            onChanged: (value) {
+              daysSinceTreatment = int.tryParse(value) ?? 0;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyzeButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : _analyzeMRL,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accentGreen,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Analyze MRL',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildResultCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.analytics,
+                color: AppColors.accentGreen,
+                size: 24,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Analysis Results',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryTextColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              jsonEncode(analysisResult),
+              style: const TextStyle(
+                fontSize: 12,
+                fontFamily: 'monospace',
+                color: AppColors.primaryTextColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 48,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            error!,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.red,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// AMU Analyzer Page (Placeholder)
+class AmuAnalyzerPage extends StatelessWidget {
+  final String tagId;
+
+  const AmuAnalyzerPage({super.key, required this.tagId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: AppColors.secondaryGreen,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'AMU Analyzer',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.medication,
+                color: AppColors.secondaryGreen,
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'AMU Analyzer',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tag: $tagId',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.secondaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Antimicrobial Usage analysis and monitoring feature will be available soon.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.mutedTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Prescription Checker Page (Placeholder)
+class PrescriptionCheckerPage extends StatelessWidget {
+  final String tagId;
+
+  const PrescriptionCheckerPage({super.key, required this.tagId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: AppColors.darkGreen,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Prescription Checker',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.assignment,
+                color: AppColors.darkGreen,
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Prescription Checker',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tag: $tagId',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.secondaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Prescription verification and drug interaction checking feature will be available soon.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.mutedTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

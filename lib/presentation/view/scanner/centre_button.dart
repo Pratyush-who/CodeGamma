@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
+import 'package:codegamma_sih/presentation/view/scanner/after_scan.dart';
 import 'package:codegamma_sih/presentation/view/scanner/cow_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../../core/constants/app_colors.dart';
 
 class AddPage extends StatefulWidget {
@@ -19,9 +22,12 @@ class _AddPageState extends State<AddPage> with TickerProviderStateMixin {
   bool _isScanning = false;
   bool _isCameraInitialized = false;
   bool _isImageCaptured = false;
+  bool _isProcessing = false;
   CameraController? _cameraController;
   List<CameraDescription> _cameras = [];
   XFile? _capturedImage;
+  String? _extractedTagId;
+  final String _geminiApiKey = "AIzaSyA1IJ3ICYjRPZGdQheZCrbZeoVN_SoOtbs";
 
   @override
   void initState() {
@@ -96,7 +102,189 @@ class _AddPageState extends State<AddPage> with TickerProviderStateMixin {
     setState(() {
       _isImageCaptured = false;
       _capturedImage = null;
+      _extractedTagId = null;
     });
+  }
+
+  Future<String?> _analyzeImageWithGemini(File imageFile) async {
+    try {
+      // Read image as bytes and convert to base64
+      final imageBytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+
+      // Use the correct Gemini Vision API endpoint
+      final url = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$_geminiApiKey',
+      );
+
+      // Create the request payload with improved prompt
+      final requestBody = {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text":
+                    """Look at this cattle ear tag image carefully. I can see there are numbers printed on the yellow ear tag.
+
+Please extract ALL the numbers you can see on this ear tag. The ear tag might have:
+- A longer number (like 5-6 digits) 
+- A shorter number (like 4-5 digits)
+- Numbers arranged vertically or horizontally
+- Numbers in different sections of the tag
+
+Please return ALL the numbers you can see, separated by commas. For example: "105319,72122" or just "105319" if you only see one number.
+
+If you cannot see any numbers clearly, return "NOT_FOUND".
+
+Focus on the printed black numbers on the yellow ear tag. Don't include any barcodes or other markings, just the actual numeric digits.""",
+              },
+              {
+                "inline_data": {"mime_type": "image/jpeg", "data": base64Image},
+              },
+            ],
+          },
+        ],
+        "generationConfig": {
+          "temperature": 0.1,
+          "topK": 1,
+          "topP": 1,
+          "maxOutputTokens": 100,
+        },
+      };
+
+      // Make the API request
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
+
+      debugPrint('Gemini API Response Status: ${response.statusCode}');
+      debugPrint('Gemini API Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        // Check if the response has the expected structure
+        if (responseData['candidates'] != null &&
+            responseData['candidates'].isNotEmpty &&
+            responseData['candidates'][0]['content'] != null &&
+            responseData['candidates'][0]['content']['parts'] != null &&
+            responseData['candidates'][0]['content']['parts'].isNotEmpty) {
+          final extractedText =
+              responseData['candidates'][0]['content']['parts'][0]['text']
+                  .trim();
+          debugPrint('Extracted text from Gemini: $extractedText');
+
+          // If the response is "NOT_FOUND", return null
+          if (extractedText.toUpperCase().contains('NOT_FOUND')) {
+            return null;
+          }
+
+          // Try to extract the 12-digit number from the response
+          final RegExp numberRegex = RegExp(r'\d+');
+          final Iterable<Match> matches = numberRegex.allMatches(extractedText);
+          final List<String> foundNumbers = matches
+              .map((match) => match.group(0)!)
+              .toList();
+
+          debugPrint('Found numbers: $foundNumbers');
+
+          if (foundNumbers.isNotEmpty) {
+            // First check if we got a single 12-digit number directly
+            for (String number in foundNumbers) {
+              if (number.length == 12) {
+                debugPrint('Found complete 12-digit number: $number');
+                return number;
+              }
+            }
+
+            // If we have exactly 2 numbers, combine them (top + bottom)
+            if (foundNumbers.length == 2) {
+              String topNumber = foundNumbers[0];
+              String bottomNumber = foundNumbers[1];
+
+              // Pad bottom number with leading zeros if needed to make it 6 digits
+              if (bottomNumber.length < 6) {
+                bottomNumber = bottomNumber.padLeft(6, '0');
+              }
+
+              String combined = topNumber + bottomNumber;
+              debugPrint(
+                'Combined top ($topNumber) + bottom ($bottomNumber) = $combined',
+              );
+
+              // Validate that we got 12 digits
+              if (combined.length == 12) {
+                return combined;
+              } else if (combined.length > 12) {
+                // If combined is longer than 12, try to extract 12 consecutive digits
+                final RegExp twelveDigitRegex = RegExp(r'\d{12}');
+                final Match? match = twelveDigitRegex.firstMatch(combined);
+                if (match != null) {
+                  return match.group(0);
+                }
+              }
+            }
+
+            // If we have more than 2 numbers, try to find the best combination
+            if (foundNumbers.length > 2) {
+              // Look for pairs that could form 12 digits
+              for (int i = 0; i < foundNumbers.length - 1; i++) {
+                for (int j = i + 1; j < foundNumbers.length; j++) {
+                  String combined = foundNumbers[i] + foundNumbers[j];
+                  if (combined.length == 12) {
+                    debugPrint(
+                      'Found 12-digit combination: ${foundNumbers[i]} + ${foundNumbers[j]} = $combined',
+                    );
+                    return combined;
+                  }
+                }
+              }
+            }
+
+            // Last resort: try to extract any 12-digit sequence from concatenated numbers
+            String allNumbers = foundNumbers.join('');
+            final RegExp twelveDigitRegex = RegExp(r'\d{12}');
+            final Match? match = twelveDigitRegex.firstMatch(allNumbers);
+            if (match != null) {
+              debugPrint('Extracted 12-digit sequence: ${match.group(0)}');
+              return match.group(0);
+            }
+
+            debugPrint(
+              'Could not form a valid 12-digit number from found numbers',
+            );
+            return null;
+          } else {
+            debugPrint('No numbers found in response');
+            return null;
+          }
+        } else {
+          debugPrint('Unexpected response structure from Gemini');
+          return null;
+        }
+      } else {
+        debugPrint(
+          'Gemini API error: ${response.statusCode} - ${response.body}',
+        );
+
+        // Try to parse error message
+        try {
+          final errorData = jsonDecode(response.body);
+          if (errorData['error'] != null) {
+            debugPrint('Gemini API error details: ${errorData['error']}');
+          }
+        } catch (e) {
+          debugPrint('Could not parse error response');
+        }
+
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error analyzing image with Gemini: $e');
+      return null;
+    }
   }
 
   void _startScanning() async {
@@ -113,41 +301,78 @@ class _AddPageState extends State<AddPage> with TickerProviderStateMixin {
     if (!mounted) return;
 
     try {
-      // Capture the image first
-      _capturedImage = await _cameraController!.takePicture();
-
       setState(() {
         _isScanning = true;
         _isImageCaptured = true;
+        _isProcessing = true;
       });
 
       _scanAnimationController.repeat();
 
-      // Simulate scan completion after 3 seconds
-      Future.delayed(const Duration(seconds: 3), () {
-        if (!mounted) return;
+      // Capture the image
+      _capturedImage = await _cameraController!.takePicture();
 
-        _scanAnimationController.stop();
-        _scanAnimationController.reset();
-        setState(() {
-          _isScanning = false;
-        });
+      // Add a small delay to show the captured image
+      await Future.delayed(const Duration(milliseconds: 500));
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                const CowDetailsPage(tagId: "Batch-No: 150010128405"),
+      // Analyze the image with Gemini AI
+      final File imageFile = File(_capturedImage!.path);
+      final String? tagId = await _analyzeImageWithGemini(imageFile);
+
+      if (!mounted) return;
+
+      _scanAnimationController.stop();
+      _scanAnimationController.reset();
+
+      setState(() {
+        _isScanning = false;
+        _isProcessing = false;
+        _extractedTagId = tagId;
+      });
+
+      if (tagId != null && tagId.isNotEmpty) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully detected ear tag: $tagId'),
+            backgroundColor: AppColors.accentGreen,
           ),
         );
-      });
-    } catch (e) {
-      debugPrint('Error capturing image: $e');
-      if (mounted) {
+
+        // Wait a moment before navigating
+        await Future.delayed(const Duration(seconds: 1));
+
+        // Navigate to the next screen with the extracted tag ID
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AfterScanPage(tagId: tagId)),
+          );
+        }
+      } else {
+        // Show error message with more helpful text
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to capture image'),
+            content: Text(
+              'Could not detect ear tag numbers clearly. Please ensure the tag is well-lit and try again.',
+            ),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error capturing or processing image: $e');
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+          _isProcessing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to process image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -385,7 +610,11 @@ class _AddPageState extends State<AddPage> with TickerProviderStateMixin {
                   _isScanning
                       ? 'Scanning ear tag...'
                       : _isImageCaptured
-                      ? 'Photo captured! Choose an option below'
+                      ? _isProcessing
+                            ? 'Processing image...'
+                            : _extractedTagId != null
+                            ? 'Tag ID: $_extractedTagId'
+                            : 'Photo captured! Choose an option below'
                       : 'Position ear tag within the frame',
                   style: const TextStyle(
                     color: Colors.white,
@@ -429,7 +658,7 @@ class _AddPageState extends State<AddPage> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-                if (_isImageCaptured && !_isScanning)
+                if (_isImageCaptured && !_isScanning && !_isProcessing)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -510,7 +739,7 @@ class _AddPageState extends State<AddPage> with TickerProviderStateMixin {
                       ),
                     ],
                   ),
-                if (_isScanning)
+                if (_isScanning || _isProcessing)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -521,7 +750,7 @@ class _AddPageState extends State<AddPage> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: AppColors.accentGreen),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         SizedBox(
@@ -529,15 +758,15 @@ class _AddPageState extends State<AddPage> with TickerProviderStateMixin {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
+                            valueColor: const AlwaysStoppedAnimation<Color>(
                               AppColors.accentGreen,
                             ),
                           ),
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         Text(
-                          'Processing...',
-                          style: TextStyle(
+                          _isProcessing ? 'Analyzing...' : 'Processing...',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -568,20 +797,18 @@ class ScanOverlayPainter extends CustomPainter {
       ..color = Colors.black.withOpacity(0.6)
       ..style = PaintingStyle.fill;
 
-    // Create the cutout rectangle (scanning area)
+    // Create the cutout rectangle (扫描区域)
     final cutoutRect = Rect.fromCenter(
       center: Offset(size.width / 2, size.height / 2),
       width: scanAreaSize.width,
       height: scanAreaSize.height,
     );
 
-    // Create path for the overlay with cutout
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(RRect.fromRectAndRadius(cutoutRect, const Radius.circular(16)))
       ..fillType = PathFillType.evenOdd;
 
-    // Draw the overlay with cutout
     canvas.drawPath(path, paint);
   }
 
