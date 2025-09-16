@@ -2,9 +2,11 @@ import 'package:codegamma_sih/presentation/view/scanner/amu.dart';
 import 'package:codegamma_sih/presentation/view/scanner/data.dart';
 import 'package:codegamma_sih/presentation/view/scanner/mrl.dart';
 import 'package:codegamma_sih/presentation/view/scanner/prescription.dart';
+import 'package:codegamma_sih/presentation/view/voice_chat/voice_chat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/models/cow_details.dart'; // Add this import if needed
 
 class AfterScanPage extends StatefulWidget {
   final String tagId;
@@ -20,6 +22,8 @@ class _AfterScanPageState extends State<AfterScanPage>
   late AnimationController _animationController;
   late List<Animation<double>> _cardAnimations;
 
+  // Add your Gemini API key here
+  static const String _geminiApiKey = 'AIzaSyA1IJ3ICYjRPZGdQheZCrbZeoVN_SoOtbs';
   @override
   void initState() {
     super.initState();
@@ -29,7 +33,7 @@ class _AfterScanPageState extends State<AfterScanPage>
     );
 
     _cardAnimations = List.generate(
-      4,
+      5, // Changed from 4 to 5 for the new voice chat card
       (index) => Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _animationController,
@@ -67,6 +71,14 @@ class _AfterScanPageState extends State<AfterScanPage>
         break;
       case 'ANIMAL_DATA':
         destinationScreen = AnimalDataScreen(tagId: widget.tagId);
+        break;
+      case 'ASK_QUERIES':
+        // Navigate to Voice Chat Page
+        destinationScreen = VoiceChatPage(
+          tagId: widget.tagId,
+          geminiApiKey: _geminiApiKey,
+          cowDetails: null, // You can pass actual cow details if available
+        );
         break;
       default:
         return;
@@ -327,6 +339,16 @@ class _AfterScanPageState extends State<AfterScanPage>
               gradientStart: AppColors.primaryColor,
               gradientEnd: AppColors.accentGreen,
               animationIndex: 3,
+            ),
+
+            _buildAnalysisCard(
+              title: 'Ask Queries',
+              subtitle: 'Voice-based AI assistant for animal data',
+              icon: Icons.mic,
+              analysisType: 'ASK_QUERIES',
+              gradientStart: Colors.deepPurple,
+              gradientEnd: Colors.purple,
+              animationIndex: 4,
             ),
 
             const SizedBox(height: 40),

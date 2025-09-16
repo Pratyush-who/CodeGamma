@@ -1,4 +1,4 @@
-// Voice Chat Page with Gemini AI Integration
+// Voice Chat Page with Gemini AI Integration - Hindi Direct Answers
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
@@ -39,16 +39,30 @@ class _VoiceChatPageState extends State<VoiceChatPage>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  // Dynamic context (model based if provided)
+  // Direct Hindi responses context
   String get cowContext =>
       widget.cowDetails?.buildContextPrompt() ??
-      'You are an AI assistant for dairy cow management. Cow Tag ID: ${widget.tagId}. Limited data provided; ask clarifying questions if needed before giving critical advice.';
+      '''You are an AI assistant for dairy cow management. Cow Tag ID: ${widget.tagId}. 
+      
+IMPORTANT INSTRUCTIONS:
+- Always respond ONLY in Hindi language (Devanagari script)
+- Give direct, specific answers - never ask questions back
+- Provide practical advice based on the cow ID
+- If you don't have specific data, give general dairy cow management advice in Hindi
+- Keep responses concise but informative
+- Use simple Hindi that farmers can understand
+- Always assume the cow is a dairy cow unless specified otherwise
+
+Example topics you can help with:
+- गाय का स्वास्थ्य (cow health)
+- दूध की गुणवत्ता (milk quality) 
+- खुराक और पोषण (feed and nutrition)
+- बीमारी की रोकथाम (disease prevention)
+- दवाई और इलाज (medicine and treatment)''';
 
   // Continuous listening configuration
   static const Duration maxSessionDuration = Duration(minutes: 10);
-  static const Duration silenceTimeout = Duration(
-    seconds: 7,
-  ); // auto send after silence
+  static const Duration silenceTimeout = Duration(seconds: 7);
   static const Duration autoRestartDelay = Duration(milliseconds: 600);
   DateTime? _lastSpeechUpdate;
   bool _pendingSend = false;
@@ -114,48 +128,25 @@ class _VoiceChatPageState extends State<VoiceChatPage>
   Future<void> _initializeTextToSpeech() async {
     _flutterTts = FlutterTts();
 
-    // Get available languages and engines
-    List<dynamic> languages = await _flutterTts.getLanguages;
-    List<dynamic> engines = await _flutterTts.getEngines;
-    print('Available TTS languages: $languages');
-    print('Available TTS engines: $engines');
-
-    // Set default language and voice settings
-    await _flutterTts.setLanguage('en-US');
-    await _flutterTts.setSpeechRate(0.5); // Slower speech rate for clarity
+    // Set Hindi language for TTS by default
+    await _flutterTts.setLanguage('hi-IN');
+    await _flutterTts.setSpeechRate(0.4); // Slower for Hindi clarity
     await _flutterTts.setVolume(1.0);
     await _flutterTts.setPitch(1.0);
 
-    // Set voice if available
-    if (engines.isNotEmpty) {
-      await _flutterTts.setEngine(engines[0]);
-    }
-
     _flutterTts.setStartHandler(() {
-      print('TTS started speaking');
       setState(() {
         _isSpeaking = true;
       });
     });
 
     _flutterTts.setCompletionHandler(() {
-      print('TTS completed speaking');
       setState(() {
         _isSpeaking = false;
       });
     });
 
-    _flutterTts.setProgressHandler((
-      String text,
-      int startOffset,
-      int endOffset,
-      String word,
-    ) {
-      print('TTS progress: $word');
-    });
-
     _flutterTts.setErrorHandler((msg) {
-      print('TTS error: $msg');
       setState(() {
         _isSpeaking = false;
       });
@@ -163,18 +154,9 @@ class _VoiceChatPageState extends State<VoiceChatPage>
     });
 
     _flutterTts.setCancelHandler(() {
-      print('TTS cancelled');
       setState(() {
         _isSpeaking = false;
       });
-    });
-
-    _flutterTts.setPauseHandler(() {
-      print('TTS paused');
-    });
-
-    _flutterTts.setContinueHandler(() {
-      print('TTS continued');
     });
   }
 
@@ -200,7 +182,7 @@ class _VoiceChatPageState extends State<VoiceChatPage>
       listenFor: maxSessionDuration,
       pauseFor: silenceTimeout,
       partialResults: true,
-      localeId: 'en_US',
+      localeId: 'en_US', // Listen in English
       cancelOnError: false,
       listenMode: stt.ListenMode.dictation,
     );
@@ -255,8 +237,6 @@ class _VoiceChatPageState extends State<VoiceChatPage>
     });
 
     try {
-      print('Sending request to Gemini with query: $query'); // Debug log
-
       final response = await http.post(
         Uri.parse(
           'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${widget.geminiApiKey}',
@@ -266,16 +246,15 @@ class _VoiceChatPageState extends State<VoiceChatPage>
           'contents': [
             {
               'parts': [
-                {'text': '$cowContext\n\nConversation input: $query'},
+                {'text': '$cowContext\n\nUser question in English: $query\n\nPlease respond ONLY in Hindi (Devanagari script). Give direct, practical advice without asking questions back.'},
               ],
             },
           ],
           'generationConfig': {
-            'temperature': 0.9,
+            'temperature': 0.7,
             'topK': 1,
             'topP': 1,
             'maxOutputTokens': 2048,
-            'stopSequences': [],
           },
           'safetySettings': [
             {
@@ -298,9 +277,6 @@ class _VoiceChatPageState extends State<VoiceChatPage>
         }),
       );
 
-      print('Response status: ${response.statusCode}'); // Debug log
-      print('Response body: ${response.body}'); // Debug log
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
@@ -318,20 +294,17 @@ class _VoiceChatPageState extends State<VoiceChatPage>
             );
           });
 
-          print('AI Response: $aiResponse'); // Debug log
           await _speakResponse(aiResponse);
         } else {
           throw Exception('No response from Gemini AI');
         }
       } else {
-        print('Error response: ${response.body}');
         throw Exception(
-          'Failed to get response from Gemini: ${response.statusCode} - ${response.body}',
+          'Failed to get response from Gemini: ${response.statusCode}',
         );
       }
     } catch (e) {
-      print('Error in _sendToGemini: $e'); // Debug log
-      final errorMessage = 'Sorry, I encountered an error: $e';
+      final errorMessage = 'माफ करें, कोई समस्या आई है। कृपया दोबारा कोशिश करें।'; // Sorry, there was a problem. Please try again.
       setState(() {
         _messages.add(
           ChatMessage(
@@ -357,55 +330,16 @@ class _VoiceChatPageState extends State<VoiceChatPage>
   Future<void> _speakResponse(String text) async {
     if (text.trim().isEmpty) return;
 
-    print(
-      'Starting TTS for text: ${text.substring(0, text.length > 50 ? 50 : text.length)}...',
-    );
-
     // Stop any ongoing speech
     await _flutterTts.stop();
 
-    // Auto-detect language and set appropriate TTS language
-    await _detectAndSetLanguage(text);
+    // Set Hindi language for TTS
+    await _flutterTts.setLanguage('hi-IN');
 
-    // Speak the text
     try {
-      final result = await _flutterTts.speak(text);
-      print('TTS speak result: $result');
-
-      if (result == 0) {
-        print('TTS failed to start');
-        _showError('Failed to start text-to-speech');
-      }
+      await _flutterTts.speak(text);
     } catch (e) {
-      print('TTS speak error: $e');
       _showError('Text-to-speech error: $e');
-    }
-  }
-
-  Future<void> _detectAndSetLanguage(String text) async {
-    try {
-      // Simple language detection based on script
-      if (RegExp(r'[\u0900-\u097F]').hasMatch(text)) {
-        // Hindi/Devanagari script
-        print('Detected Hindi text, setting TTS to hi-IN');
-        await _flutterTts.setLanguage('hi-IN');
-      } else if (RegExp(r'[\u0980-\u09FF]').hasMatch(text)) {
-        // Bengali script
-        print('Detected Bengali text, setting TTS to bn-IN');
-        await _flutterTts.setLanguage('bn-IN');
-      } else if (RegExp(r'[\u0A00-\u0A7F]').hasMatch(text)) {
-        // Punjabi script
-        print('Detected Punjabi text, setting TTS to pa-IN');
-        await _flutterTts.setLanguage('pa-IN');
-      } else {
-        // Default to English
-        print('Detected English text, setting TTS to en-US');
-        await _flutterTts.setLanguage('en-US');
-      }
-    } catch (e) {
-      print('Language detection error: $e');
-      // Fallback to English
-      await _flutterTts.setLanguage('en-US');
     }
   }
 
@@ -443,7 +377,7 @@ class _VoiceChatPageState extends State<VoiceChatPage>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          ' ${widget.tagId}',
+          'गाय ${widget.tagId} - AI सलाह',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -488,7 +422,7 @@ class _VoiceChatPageState extends State<VoiceChatPage>
           ),
           const SizedBox(height: 24),
           Text(
-            'Ask me anything about cow ${widget.tagId}',
+            'गाय ${widget.tagId} के बारे में कुछ भी पूछें',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -497,9 +431,9 @@ class _VoiceChatPageState extends State<VoiceChatPage>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          Text(
-            'Tap the microphone button and speak your question. I can help with health information, treatment history, milk safety, and farming advice.',
-            style: const TextStyle(
+          const Text(
+            'Speak your question in English and get direct answers in Hindi about cow health, milk quality, feeding, and care.',
+            style: TextStyle(
               fontSize: 14,
               color: AppColors.secondaryTextColor,
             ),
@@ -632,9 +566,7 @@ class _VoiceChatPageState extends State<VoiceChatPage>
                 style: TextStyle(
                   color: AppColors.primaryTextColor,
                   fontSize: 14,
-                  fontStyle: _isProcessing
-                      ? FontStyle.italic
-                      : FontStyle.normal,
+                  fontStyle: _isProcessing ? FontStyle.italic : FontStyle.normal,
                 ),
               ),
             ),
@@ -643,7 +575,7 @@ class _VoiceChatPageState extends State<VoiceChatPage>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Manual stop listening button (only shown when listening)
+              // Manual stop listening button
               if (_isListening)
                 GestureDetector(
                   onTap: () => _stopListening(auto: false),
@@ -672,9 +604,7 @@ class _VoiceChatPageState extends State<VoiceChatPage>
               // Voice input button
               GestureDetector(
                 onTap: _isInitialized && !_isProcessing
-                    ? (_isListening
-                          ? () => _stopListening(auto: false)
-                          : _startListening)
+                    ? (_isListening ? () => _stopListening(auto: false) : _startListening)
                     : null,
                 child: AnimatedBuilder(
                   animation: _pulseAnimation,
@@ -691,23 +621,14 @@ class _VoiceChatPageState extends State<VoiceChatPage>
                             colors: _isListening
                                 ? [Colors.red, Colors.red.withOpacity(0.8)]
                                 : _isProcessing
-                                ? [
-                                    Colors.orange,
-                                    Colors.orange.withOpacity(0.8),
-                                  ]
-                                : [
-                                    AppColors.primaryColor,
-                                    AppColors.primaryColorLight,
-                                  ],
+                                ? [Colors.orange, Colors.orange.withOpacity(0.8)]
+                                : [AppColors.primaryColor, AppColors.primaryColorLight],
                           ),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  (_isListening
-                                          ? Colors.red
-                                          : AppColors.primaryColor)
-                                      .withOpacity(0.3),
+                              color: (_isListening ? Colors.red : AppColors.primaryColor)
+                                  .withOpacity(0.3),
                               blurRadius: 15,
                               spreadRadius: _isListening ? 5 : 0,
                             ),
@@ -728,7 +649,7 @@ class _VoiceChatPageState extends State<VoiceChatPage>
                 ),
               ),
 
-              // Speaking indicator and stop button
+              // Speaking indicator
               if (_isSpeaking)
                 GestureDetector(
                   onTap: _stopSpeaking,
@@ -754,7 +675,7 @@ class _VoiceChatPageState extends State<VoiceChatPage>
                   ),
                 )
               else if (_isListening || _isProcessing) ...[
-                const SizedBox(width: 60), // Placeholder for alignment
+                const SizedBox(width: 60),
               ],
             ],
           ),
@@ -763,14 +684,14 @@ class _VoiceChatPageState extends State<VoiceChatPage>
           const SizedBox(height: 12),
           Text(
             _isListening
-                ? 'Listening… pause ~${silenceTimeout.inSeconds}s to auto-send'
+                ? 'बोल रहे हैं... ${silenceTimeout.inSeconds} सेकंड रुकने पर भेजा जाएगा'
                 : _isProcessing
-                ? 'Processing your question... Please wait'
+                ? 'आपके सवाल का जवाब तैयार कर रहे हैं...'
                 : _isSpeaking
-                ? 'Speaking response... Tap speaker button to stop'
+                ? 'जवाब बोल रहे हैं... रोकने के लिए बटन दबाएं'
                 : !_isInitialized
-                ? 'Initializing voice services...'
-                : 'Tap mic and talk. After answer, just speak follow-ups.',
+                ? 'Voice services शुरू कर रहे हैं...'
+                : 'माइक दबाएं और अंग्रेजी में सवाल पूछें। हिंदी में जवाब मिलेगा।',
             style: TextStyle(
               color: AppColors.secondaryTextColor,
               fontSize: 12,

@@ -1,5 +1,5 @@
+import 'package:codegamma_sih/core/constants/app_colors.dart';
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 
 class OwnerManagementScreen extends StatelessWidget {
   const OwnerManagementScreen({super.key});
@@ -9,7 +9,6 @@ class OwnerManagementScreen extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     final isTablet = size.width > 600;
 
-    // Static owner data
     final Owner owner = Owner(
       ownerId: "OWN001",
       name: "Rajesh Kumar",
@@ -48,11 +47,11 @@ class OwnerManagementScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: AppColors.primaryColor,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.whiteColor,
         title: const Text(
           'Owner Profile',
           style: TextStyle(fontWeight: FontWeight.w700),
@@ -65,13 +64,14 @@ class OwnerManagementScreen extends StatelessWidget {
           children: [
             // Owner Profile Card
             Container(
+              width: double.infinity,
               padding: EdgeInsets.all(isTablet ? 24 : 20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surfaceColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: AppColors.blackColor.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -83,7 +83,7 @@ class OwnerManagementScreen extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: isTablet ? 40 : 32,
-                        backgroundColor: AppColors.primaryColor.withOpacity(0.1),
+                        backgroundColor: AppColors.lightGreen,
                         child: Icon(
                           Icons.person_rounded,
                           color: AppColors.primaryColor,
@@ -103,7 +103,7 @@ class OwnerManagementScreen extends StatelessWidget {
                                 color: AppColors.primaryTextColor,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               'Owner ID: ${owner.ownerId}',
                               style: TextStyle(
@@ -111,17 +111,20 @@ class OwnerManagementScreen extends StatelessWidget {
                                 color: AppColors.secondaryTextColor,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Row(
                               children: [
                                 Icon(Icons.calendar_today_rounded, 
                                     size: 16, color: AppColors.secondaryTextColor),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Registered: ${_formatDate(owner.registrationDate)}',
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 14 : 12,
-                                    color: AppColors.secondaryTextColor,
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Registered: ${_formatDate(owner.registrationDate)}',
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 14 : 12,
+                                      color: AppColors.secondaryTextColor,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
@@ -131,58 +134,52 @@ class OwnerManagementScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: 20),
-                  // Owner Details Grid
-                  GridView.count(
-                    crossAxisCount: isTablet ? 3 : 2,
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: isTablet ? 3 : 2.5,
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
                     children: [
                       _DetailItem(
                         icon: Icons.location_on_rounded,
                         title: 'Location',
                         value: owner.location,
-                        color: Colors.blue,
+                        color: AppColors.accentGreen,
+                        width: isTablet ? (size.width - 96) / 3 - 12 : (size.width - 64) / 2 - 12,
                       ),
                       _DetailItem(
                         icon: Icons.phone_rounded,
                         title: 'Contact',
                         value: owner.phoneNumber,
-                        color: Colors.green,
+                        color: AppColors.secondaryGreen,
+                        width: isTablet ? (size.width - 96) / 3 - 12 : (size.width - 64) / 2 - 12,
                       ),
                       _DetailItem(
                         icon: Icons.email_rounded,
                         title: 'Email',
                         value: owner.email,
-                        color: Colors.orange,
+                        color: AppColors.primaryColorLight,
+                        width: isTablet ? (size.width - 96) / 3 - 12 : (size.width - 64) / 1 - 12,
                       ),
                       _DetailItem(
                         icon: Icons.agriculture_rounded,
                         title: 'Farm Size',
                         value: owner.farmSize,
-                        color: Colors.purple,
-                      ),
-                      _DetailItem(
-                        icon: Icons.work_history_rounded,
-                        title: 'Experience',
-                        value: owner.experience,
-                        color: Colors.teal,
+                        color: AppColors.darkGreen,
+                        width: isTablet ? (size.width - 96) / 3 - 12 : (size.width - 64) / 2 - 12,
                       ),
                       _DetailItem(
                         icon: Icons.pets_rounded,
                         title: 'Total Livestock',
                         value: owner.livestockCount.toString(),
-                        color: Colors.red,
+                        color: AppColors.primaryColorDark,
+                        width: isTablet ? (size.width - 96) / 3 - 12 : (size.width - 64) / 2 - 12,
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             // Livestock Section
             Text(
               'Livestock Details',
@@ -192,34 +189,34 @@ class OwnerManagementScreen extends StatelessWidget {
                 color: AppColors.primaryTextColor,
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             // Flocks List
             ListView.builder(
               shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: owner.flocks.length,
               itemBuilder: (context, index) {
                 final flock = owner.flocks[index];
                 return Container(
-                  margin: EdgeInsets.only(bottom: 16),
-                  padding: EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surfaceColor,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.blackColor.withOpacity(0.05),
                         blurRadius: 8,
-                        offset: Offset(0, 2),
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _getFlockColor(flock.type).withOpacity(0.1),
+                          color: _getFlockColor(flock.type).withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
@@ -228,37 +225,41 @@ class OwnerManagementScreen extends StatelessWidget {
                           size: 24,
                         ),
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               flock.name,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.primaryTextColor,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               '${flock.animalCount} ${flock.type}s • ${flock.breed}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors.secondaryTextColor,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Chip(
-                        backgroundColor: _getFlockColor(flock.type).withOpacity(0.1),
+                        backgroundColor: _getFlockColor(flock.type).withOpacity(0.15),
+                        side: BorderSide.none,
                         label: Text(
                           flock.type,
                           style: TextStyle(
                             color: _getFlockColor(flock.type),
                             fontWeight: FontWeight.w600,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -267,7 +268,7 @@ class OwnerManagementScreen extends StatelessWidget {
                 );
               },
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             // Farm Statistics
             Text(
               'Farm Statistics',
@@ -277,40 +278,43 @@ class OwnerManagementScreen extends StatelessWidget {
                 color: AppColors.primaryTextColor,
               ),
             ),
-            SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: isTablet ? 4 : 2,
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
+            const SizedBox(height: 16),
+            // Statistics - Using Wrap instead of GridView
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
                 _StatCard(
                   title: 'Total Animals',
                   value: owner.totalAnimals.toString(),
                   icon: Icons.pets_rounded,
                   color: AppColors.primaryColor,
+                  width: isTablet ? (size.width - 72) / 4 - 12 : (size.width - 44) / 2 - 12,
                 ),
                 _StatCard(
                   title: 'Livestock Value',
                   value: '₹4.2L',
                   icon: Icons.attach_money_rounded,
-                  color: Colors.green,
+                  color: AppColors.accentGreen,
+                  width: isTablet ? (size.width - 72) / 4 - 12 : (size.width - 44) / 2 - 12,
                 ),
                 _StatCard(
                   title: 'Monthly Production',
                   value: '320L',
                   icon: Icons.local_drink_rounded,
-                  color: Colors.blue,
+                  color: AppColors.secondaryGreen,
+                  width: isTablet ? (size.width - 72) / 4 - 12 : (size.width - 44) / 2 - 12,
                 ),
                 _StatCard(
                   title: 'Vaccination Due',
                   value: '12 Animals',
                   icon: Icons.medical_services_rounded,
-                  color: Colors.orange,
+                  color: AppColors.primaryColorLight,
+                  width: isTablet ? (size.width - 72) / 4 - 12 : (size.width - 44) / 2 - 12,
                 ),
               ],
             ),
+            const SizedBox(height: 24), // Bottom padding
           ],
         ),
       ),
@@ -332,9 +336,9 @@ class OwnerManagementScreen extends StatelessWidget {
 
   Color _getFlockColor(String type) {
     switch (type.toLowerCase()) {
-      case 'cattle': return Colors.brown;
-      case 'goat': return Colors.orange;
-      case 'chicken': return Colors.red;
+      case 'cattle': return AppColors.darkGreen;
+      case 'goat': return AppColors.accentGreen;
+      case 'chicken': return AppColors.primaryColorDark;
       default: return AppColors.primaryColor;
     }
   }
@@ -345,57 +349,57 @@ class _DetailItem extends StatelessWidget {
   final String title;
   final String value;
   final Color color;
+  final double width;
 
   const _DetailItem({
     required this.icon,
     required this.title,
     required this.value,
     required this.color,
+    required this.width,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(12),
+      width: width,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 18, color: color),
           ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.secondaryTextColor,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryTextColor,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.secondaryTextColor,
+              fontWeight: FontWeight.w500,
             ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryTextColor,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
           ),
         ],
       ),
@@ -408,57 +412,64 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final double width;
 
   const _StatCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    required this.width,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      width: width,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.blackColor.withOpacity(0.05),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 20, color: color),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: AppColors.primaryTextColor,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: AppColors.secondaryTextColor,
               fontWeight: FontWeight.w600,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
           ),
         ],
       ),
