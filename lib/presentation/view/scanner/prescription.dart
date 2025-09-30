@@ -107,7 +107,7 @@ class _PrescriptionAnalysisScreenState
       var request = http.MultipartRequest(
         'POST',
         Uri.parse(
-          'https://8f2wld3k-8001.inc1.devtunnels.ms/prescription/upload',
+          'https://6cd1f87533a9.ngrok-free.app/prescription/upload',
         ),
       );
 

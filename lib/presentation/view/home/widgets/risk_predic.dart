@@ -22,7 +22,7 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
   bool _showDebugInfo = false;
 
   // Base URL for API
-  static const String baseUrl = 'https://8f2wld3k-8001.inc1.devtunnels.ms';
+  static const String baseUrl = 'https://6cd1f87533a9.ngrok-free.app';
 
   // Form Controllers
   final _sessionIdController = TextEditingController();

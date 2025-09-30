@@ -182,7 +182,7 @@ Example topics you can help with:
       listenFor: maxSessionDuration,
       pauseFor: silenceTimeout,
       partialResults: true,
-      localeId: 'en_US', // Listen in English
+      localeId: 'en_US',
       cancelOnError: false,
       listenMode: stt.ListenMode.dictation,
     );

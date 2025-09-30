@@ -24,7 +24,7 @@ class _AmuAnalysisScreenState extends State<AmuAnalysisScreen> {
   }
 
   Future<void> fetchAmuAnalysis() async {
-    final url = 'https://8f2wld3k-8001.inc1.devtunnels.ms/animal/${widget.tagId}/amu';
+    final url = 'https://6cd1f87533a9.ngrok-free.app/animal/${widget.tagId}/amu';
     try {
       final response = await http.get(Uri.parse(url), headers: {
         'accept': 'application/json',

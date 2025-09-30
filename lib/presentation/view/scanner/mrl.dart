@@ -52,7 +52,7 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   Future<void> _fetchMrlAnalysis() async {
     try {
       final response = await http.post(
-        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$_targetTissue&days_since_treatment=$_daysSinceTreatment'),
+        Uri.parse('https://6cd1f87533a9.ngrok-free.app/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$_targetTissue&days_since_treatment=$_daysSinceTreatment'),
         headers: {'accept': 'application/json'},
       );
 
@@ -69,7 +69,7 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   Future<void> _fetchComplianceCheck() async {
     try {
       final response = await http.post(
-        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/api/v1/mrl/check-compliance?tag_no=${widget.tagId}&drug_name=$_drugName&species=cattle&dosage=$_dosage&treatment_duration=$_treatmentDuration&days_since_treatment=$_daysSinceTreatment&target_tissue=$_targetTissue'),
+        Uri.parse('https://6cd1f87533a9.ngrok-free.app/api/v1/mrl/check-compliance?tag_no=${widget.tagId}&drug_name=$_drugName&species=cattle&dosage=$_dosage&treatment_duration=$_treatmentDuration&days_since_treatment=$_daysSinceTreatment&target_tissue=$_targetTissue'),
         headers: {'accept': 'application/json'},
       );
 
@@ -86,7 +86,7 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   Future<void> _fetchResiduePrediction() async {
     try {
       final response = await http.post(
-        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/api/v1/mrl/predict-residue?tag_no=${widget.tagId}&drug_name=$_drugName&days_since_treatment=$_daysSinceTreatment&dosage=$_dosage&treatment_duration=$_treatmentDuration'),
+        Uri.parse('https://6cd1f87533a9.ngrok-free.app/api/v1/mrl/predict-residue?tag_no=${widget.tagId}&drug_name=$_drugName&days_since_treatment=$_daysSinceTreatment&dosage=$_dosage&treatment_duration=$_treatmentDuration'),
         headers: {'accept': 'application/json'},
       );
 

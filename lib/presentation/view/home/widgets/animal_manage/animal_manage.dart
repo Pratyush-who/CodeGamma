@@ -32,7 +32,7 @@ class _AnimalManagementScreenState extends State<AnimalManagementScreen> {
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/database/animals?limit=1000'),
+        Uri.parse('https://6cd1f87533a9.ngrok-free.app/database/animals?limit=1000'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -52,7 +52,7 @@ class _AnimalManagementScreenState extends State<AnimalManagementScreen> {
   Future<void> _addAnimal(Animal animal) async {
     try {
       final response = await http.post(
-        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/database/animals'),
+        Uri.parse('https://6cd1f87533a9.ngrok-free.app/database/animals'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(animal.toJson()),
       );

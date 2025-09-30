@@ -26,7 +26,7 @@ class _AnimalDataScreenState extends State<AnimalDataScreen> {
   Future<void> _fetchAnimalData() async {
     try {
       final response = await http.get(
-        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/animal/${widget.tagId}'),
+        Uri.parse('https://6cd1f87533a9.ngrok-free.app/animal/${widget.tagId}'),
         headers: {'accept': 'application/json'},
       );
 

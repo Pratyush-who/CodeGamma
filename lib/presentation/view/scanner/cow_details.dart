@@ -27,7 +27,7 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
   Future<void> _fetchAnimalData() async {
     try {
       final response = await http.get(
-        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/animal/${widget.tagId}'),
+        Uri.parse('https://6cd1f87533a9.ngrok-free.app/animal/${widget.tagId}'),
         headers: {'accept': 'application/json'},
       );
 
@@ -604,7 +604,7 @@ class _MRLAnalyzerPageState extends State<MRLAnalyzerPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://8f2wld3k-8001.inc1.devtunnels.ms/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$selectedTissue&days_since_treatment=$daysSinceTreatment'),
+        Uri.parse('https://6cd1f87533a9.ngrok-free.app/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$selectedTissue&days_since_treatment=$daysSinceTreatment'),
         headers: {'accept': 'application/json'},
       );
 
