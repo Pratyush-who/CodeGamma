@@ -6,7 +6,6 @@ import 'package:codegamma_sih/presentation/view/voice_chat/voice_chat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/models/cow_details.dart'; // Add this import if needed
 
 class AfterScanPage extends StatefulWidget {
   final String tagId;

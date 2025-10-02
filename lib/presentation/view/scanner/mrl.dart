@@ -32,14 +32,14 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
 
   Future<void> _fetchAllData() async {
     setState(() => _isLoading = true);
-    
+
     try {
       await Future.wait([
         _fetchMrlAnalysis(),
         _fetchComplianceCheck(),
         _fetchResiduePrediction(),
       ]);
-      
+
       setState(() => _isLoading = false);
     } catch (e) {
       setState(() {
@@ -52,7 +52,9 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   Future<void> _fetchMrlAnalysis() async {
     try {
       final response = await http.post(
-        Uri.parse('https://6cd1f87533a9.ngrok-free.app/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$_targetTissue&days_since_treatment=$_daysSinceTreatment'),
+        Uri.parse(
+          'https://bfc211a032dc.ngrok-free.app/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$_targetTissue&days_since_treatment=$_daysSinceTreatment',
+        ),
         headers: {'accept': 'application/json'},
       );
 
@@ -69,7 +71,9 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   Future<void> _fetchComplianceCheck() async {
     try {
       final response = await http.post(
-        Uri.parse('https://6cd1f87533a9.ngrok-free.app/api/v1/mrl/check-compliance?tag_no=${widget.tagId}&drug_name=$_drugName&species=cattle&dosage=$_dosage&treatment_duration=$_treatmentDuration&days_since_treatment=$_daysSinceTreatment&target_tissue=$_targetTissue'),
+        Uri.parse(
+          'https://bfc211a032dc.ngrok-free.app/api/v1/mrl/check-compliance?tag_no=${widget.tagId}&drug_name=$_drugName&species=cattle&dosage=$_dosage&treatment_duration=$_treatmentDuration&days_since_treatment=$_daysSinceTreatment&target_tissue=$_targetTissue',
+        ),
         headers: {'accept': 'application/json'},
       );
 
@@ -86,7 +90,9 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   Future<void> _fetchResiduePrediction() async {
     try {
       final response = await http.post(
-        Uri.parse('https://6cd1f87533a9.ngrok-free.app/api/v1/mrl/predict-residue?tag_no=${widget.tagId}&drug_name=$_drugName&days_since_treatment=$_daysSinceTreatment&dosage=$_dosage&treatment_duration=$_treatmentDuration'),
+        Uri.parse(
+          'https://bfc211a032dc.ngrok-free.app/api/v1/mrl/predict-residue?tag_no=${widget.tagId}&drug_name=$_drugName&days_since_treatment=$_daysSinceTreatment&dosage=$_dosage&treatment_duration=$_treatmentDuration',
+        ),
         headers: {'accept': 'application/json'},
       );
 
@@ -105,7 +111,10 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primaryColor.withOpacity(0.8), AppColors.accentGreen.withOpacity(0.8)],
+          colors: [
+            AppColors.primaryColor.withOpacity(0.8),
+            AppColors.accentGreen.withOpacity(0.8),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -140,7 +149,9 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                       value: _targetTissue,
                       dropdownColor: Colors.white,
                       style: TextStyle(color: AppColors.primaryTextColor),
-                      items: ['muscle', 'liver', 'kidney', 'milk', 'eggs'].map((tissue) {
+                      items: ['muscle', 'liver', 'kidney', 'milk', 'eggs'].map((
+                        tissue,
+                      ) {
                         return DropdownMenuItem(
                           value: tissue,
                           child: Text(tissue.toUpperCase()),
@@ -336,22 +347,24 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
             ],
 
             // Doctor Visits
-            if (animalContext['doctorVisits'] != null && animalContext['doctorVisits'].isNotEmpty) ...[
+            if (animalContext['doctorVisits'] != null &&
+                animalContext['doctorVisits'].isNotEmpty) ...[
               const SizedBox(height: 20),
               _buildSubsectionHeader('Recent Doctor Visits'),
               const SizedBox(height: 8),
-              ...((animalContext['doctorVisits'] as List).take(2).map((visit) =>
-                _buildDoctorVisitCard(visit)
-              )),
+              ...((animalContext['doctorVisits'] as List)
+                  .take(2)
+                  .map((visit) => _buildDoctorVisitCard(visit))),
             ],
 
             // Prescriptions Summary
-            if (animalContext['prescriptions'] != null && animalContext['prescriptions'].isNotEmpty) ...[
+            if (animalContext['prescriptions'] != null &&
+                animalContext['prescriptions'].isNotEmpty) ...[
               const SizedBox(height: 20),
               _buildSubsectionHeader('Active Prescriptions'),
               const SizedBox(height: 8),
-              ...((animalContext['prescriptions'] as List).map((prescription) =>
-                _buildPrescriptionCard(prescription)
+              ...((animalContext['prescriptions'] as List).map(
+                (prescription) => _buildPrescriptionCard(prescription),
               )),
             ],
           ],
@@ -377,7 +390,11 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
               color: AppColors.accentGreen.withOpacity(0.2),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(Icons.medical_services, color: AppColors.darkGreen, size: 16),
+            child: Icon(
+              Icons.medical_services,
+              color: AppColors.darkGreen,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -409,7 +426,7 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
 
   Widget _buildPrescriptionCard(Map<String, dynamic> prescription) {
     final medicines = prescription['medicines'] as List? ?? [];
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -429,7 +446,11 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                   color: AppColors.primaryColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(Icons.medication, color: AppColors.primaryColor, size: 16),
+                child: Icon(
+                  Icons.medication,
+                  color: AppColors.primaryColor,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -458,18 +479,20 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
           ),
           if (medicines.isNotEmpty) ...[
             const SizedBox(height: 8),
-            ...medicines.take(2).map((medicine) => 
-              Padding(
-                padding: const EdgeInsets.only(left: 20),
-                child: Text(
-                  '• ${medicine['name']} - ${medicine['dosage']} (${medicine['duration']})',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.primaryTextColor,
+            ...medicines
+                .take(2)
+                .map(
+                  (medicine) => Padding(
+                    padding: const EdgeInsets.only(left: 20),
+                    child: Text(
+                      '• ${medicine['name']} - ${medicine['dosage']} (${medicine['duration']})',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primaryTextColor,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
           ],
         ],
       ),
@@ -541,13 +564,19 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
 
   Widget _buildComplianceMetrics(Map<String, dynamic> complianceResult) {
     final String status = complianceResult['compliance_status'] ?? 'unknown';
-    final double predictedLevel = complianceResult['predicted_residue_level']?.toDouble() ?? 0.0;
+    final double predictedLevel =
+        complianceResult['predicted_residue_level']?.toDouble() ?? 0.0;
     final double mrlLimit = complianceResult['mrl_limit']?.toDouble() ?? 0.0;
-    final double safetyMargin = complianceResult['safety_margin']?.toDouble() ?? 0.0;
-    final double confidence = complianceResult['confidence_score']?.toDouble() ?? 0.0;
+    final double safetyMargin =
+        complianceResult['safety_margin']?.toDouble() ?? 0.0;
+    final double confidence =
+        complianceResult['confidence_score']?.toDouble() ?? 0.0;
 
-    Color statusColor = status == 'violation' ? Colors.red : 
-                       status == 'compliant' ? AppColors.accentGreen : Colors.orange;
+    Color statusColor = status == 'violation'
+        ? Colors.red
+        : status == 'compliant'
+        ? AppColors.accentGreen
+        : Colors.orange;
 
     return Column(
       children: [
@@ -590,7 +619,8 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
             ),
           ],
         ),
-        if (complianceResult['risk_factors'] != null && complianceResult['risk_factors'].isNotEmpty) ...[
+        if (complianceResult['risk_factors'] != null &&
+            complianceResult['risk_factors'].isNotEmpty) ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
@@ -611,8 +641,8 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                ...(complianceResult['risk_factors'] as List).map((factor) =>
-                  Text(
+                ...(complianceResult['risk_factors'] as List).map(
+                  (factor) => Text(
                     '• $factor',
                     style: const TextStyle(
                       fontSize: 13,
@@ -669,8 +699,8 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            ...(withdrawal['factors_considered'] as List).map((factor) =>
-              Text(
+            ...(withdrawal['factors_considered'] as List).map(
+              (factor) => Text(
                 '• $factor',
                 style: const TextStyle(
                   fontSize: 12,
@@ -709,15 +739,19 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
 
   Widget _buildResidueChart(Map<String, dynamic> residues) {
     final tissues = ['muscle', 'liver', 'kidney', 'milk'];
-    final values = tissues.map((tissue) => residues[tissue]?.toDouble() ?? 0.0).toList();
-    final maxValue = values.isEmpty ? 1.0 : values.reduce((a, b) => a > b ? a : b);
+    final values = tissues
+        .map((tissue) => residues[tissue]?.toDouble() ?? 0.0)
+        .toList();
+    final maxValue = values.isEmpty
+        ? 1.0
+        : values.reduce((a, b) => a > b ? a : b);
 
     return Column(
       children: List.generate(tissues.length, (index) {
         final tissue = tissues[index];
         final value = values[index];
         final percentage = maxValue > 0 ? value / maxValue : 0.0;
-        
+
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
@@ -750,7 +784,10 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                         height: 24,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [AppColors.primaryColor, AppColors.accentGreen],
+                            colors: [
+                              AppColors.primaryColor,
+                              AppColors.accentGreen,
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -840,12 +877,16 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
 
   Widget _buildRecommendationsSection() {
     final recommendations = mrlAnalysisData?['recommendations'] as List? ?? [];
-    
+
     if (recommendations.isEmpty) return const SizedBox.shrink();
 
     return Column(
       children: [
-        _buildSectionHeader('System Recommendations', Icons.lightbulb, Colors.amber),
+        _buildSectionHeader(
+          'System Recommendations',
+          Icons.lightbulb,
+          Colors.amber,
+        ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
@@ -867,7 +908,7 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
               children: recommendations.asMap().entries.map((entry) {
                 final index = entry.key;
                 final recommendation = entry.value.toString();
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Row(
@@ -915,25 +956,26 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
 
   Widget _buildOverallStatusCard() {
     if (mrlAnalysisData == null) return const SizedBox.shrink();
-    
+
     final overallAssessment = mrlAnalysisData!['overall_assessment'] ?? {};
     final bool isCompliant = overallAssessment['compliant'] ?? false;
     final String safetyStatus = overallAssessment['safety_status'] ?? 'unknown';
-    
+
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isCompliant 
-            ? [AppColors.accentGreen, AppColors.secondaryGreen]
-            : [Colors.red.shade400, Colors.red.shade600],
+          colors: isCompliant
+              ? [AppColors.accentGreen, AppColors.secondaryGreen]
+              : [Colors.red.shade400, Colors.red.shade600],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (isCompliant ? AppColors.accentGreen : Colors.red).withOpacity(0.3),
+            color: (isCompliant ? AppColors.accentGreen : Colors.red)
+                .withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -963,7 +1005,9 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isCompliant ? 'MRL COMPLIANT' : 'MRL VIOLATION DETECTED',
+                        isCompliant
+                            ? 'MRL COMPLIANT'
+                            : 'MRL VIOLATION DETECTED',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -1033,14 +1077,21 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   }
 
   Widget _buildMrlAnalysisSection() {
-    if (mrlAnalysisData?['mrl_analysis'] == null) return const SizedBox.shrink();
+    if (mrlAnalysisData?['mrl_analysis'] == null)
+      return const SizedBox.shrink();
 
     final mrlAnalysisList = mrlAnalysisData!['mrl_analysis'] as List;
-    
+
     return Column(
       children: [
-        _buildSectionHeader('MRL Analysis Results', Icons.analytics, Colors.blue),
-        ...mrlAnalysisList.map((analysis) => _buildMedicationAnalysisCard(analysis)).toList(),
+        _buildSectionHeader(
+          'MRL Analysis Results',
+          Icons.analytics,
+          Colors.blue,
+        ),
+        ...mrlAnalysisList
+            .map((analysis) => _buildMedicationAnalysisCard(analysis))
+            .toList(),
       ],
     );
   }
@@ -1061,7 +1112,11 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
 
     return Column(
       children: [
-        _buildSectionHeader('Residue Predictions', Icons.science, Colors.purple),
+        _buildSectionHeader(
+          'Residue Predictions',
+          Icons.science,
+          Colors.purple,
+        ),
         _buildResiduePredictionCard(residuePredictionData!),
       ],
     );
@@ -1078,9 +1133,10 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   }
 
   Widget _buildAnimalContextSection() {
-    final animalContext = mrlAnalysisData?['animal_context'] ?? 
-                         complianceCheckData?['animal_context'];
-    
+    final animalContext =
+        mrlAnalysisData?['animal_context'] ??
+        complianceCheckData?['animal_context'];
+
     if (animalContext == null) return const SizedBox.shrink();
 
     return Column(
@@ -1130,10 +1186,12 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
   Widget _buildMedicationAnalysisCard(Map<String, dynamic> analysis) {
     final complianceResult = analysis['compliance_result'] ?? {};
     final predictedResidues = analysis['predicted_residues'] ?? {};
-    final withdrawalRecommendation = analysis['withdrawal_recommendation'] ?? {};
+    final withdrawalRecommendation =
+        analysis['withdrawal_recommendation'] ?? {};
     final safetyAlerts = analysis['safety_alerts'] ?? [];
 
-    final String complianceStatus = complianceResult['compliance_status'] ?? 'unknown';
+    final String complianceStatus =
+        complianceResult['compliance_status'] ?? 'unknown';
     final bool isViolation = complianceStatus == 'violation';
 
     return Container(
@@ -1142,12 +1200,15 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
         color: AppColors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isViolation ? Colors.red.withOpacity(0.5) : AppColors.accentGreen.withOpacity(0.5),
+          color: isViolation
+              ? Colors.red.withOpacity(0.5)
+              : AppColors.accentGreen.withOpacity(0.5),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: (isViolation ? Colors.red : AppColors.accentGreen).withOpacity(0.1),
+            color: (isViolation ? Colors.red : AppColors.accentGreen)
+                .withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1162,8 +1223,8 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isViolation
-                  ? [Colors.red.shade400, Colors.red.shade600]
-                  : [AppColors.primaryColor, AppColors.accentGreen],
+                    ? [Colors.red.shade400, Colors.red.shade600]
+                    : [AppColors.primaryColor, AppColors.accentGreen],
               ),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(14),
@@ -1221,7 +1282,7 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                 _buildSubsectionHeader('Compliance Results'),
                 const SizedBox(height: 12),
                 _buildComplianceMetrics(complianceResult),
-                
+
                 // Predicted Residues
                 if (predictedResidues.isNotEmpty) ...[
                   const SizedBox(height: 24),
@@ -1243,7 +1304,9 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                   const SizedBox(height: 24),
                   _buildSubsectionHeader('Safety Alerts'),
                   const SizedBox(height: 12),
-                  ...safetyAlerts.map((alert) => _buildAlertCard(alert)).toList(),
+                  ...safetyAlerts
+                      .map((alert) => _buildAlertCard(alert))
+                      .toList(),
                 ],
               ],
             ),
@@ -1462,21 +1525,9 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildWithdrawalMetric(
-                  '7',
-                  'Standard Days',
-                  Colors.blue,
-                ),
-                _buildWithdrawalMetric(
-                  '8',
-                  'Recommended',
-                  Colors.green,
-                ),
-                _buildWithdrawalMetric(
-                  '1',
-                  'Safety Buffer',
-                  Colors.orange,
-                ),
+                _buildWithdrawalMetric('7', 'Standard Days', Colors.blue),
+                _buildWithdrawalMetric('8', 'Recommended', Colors.green),
+                _buildWithdrawalMetric('1', 'Safety Buffer', Colors.orange),
               ],
             ),
 
@@ -1484,15 +1535,17 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _daysSinceTreatment >= 8 
-                  ? AppColors.lightGreen 
-                  : Colors.red.withOpacity(0.1),
+                color: _daysSinceTreatment >= 8
+                    ? AppColors.lightGreen
+                    : Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Icon(
-                    _daysSinceTreatment >= 8 ? Icons.check_circle : Icons.warning,
+                    _daysSinceTreatment >= 8
+                        ? Icons.check_circle
+                        : Icons.warning,
                     color: _daysSinceTreatment >= 8 ? Colors.green : Colors.red,
                     size: 24,
                   ),
@@ -1500,11 +1553,13 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                   Expanded(
                     child: Text(
                       _daysSinceTreatment >= 8
-                        ? 'Safe for consumption (withdrawal period completed)'
-                        : 'Not safe for consumption (${8 - _daysSinceTreatment} days remaining)',
+                          ? 'Safe for consumption (withdrawal period completed)'
+                          : 'Not safe for consumption (${8 - _daysSinceTreatment} days remaining)',
                       style: TextStyle(
                         fontSize: 14,
-                        color: _daysSinceTreatment >= 8 ? Colors.green : Colors.red,
+                        color: _daysSinceTreatment >= 8
+                            ? Colors.green
+                            : Colors.red,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1524,40 +1579,42 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
             ),
             const SizedBox(height: 8),
             ...([
-              'Drug pharmacokinetics',
-              'Dosage and treatment duration',
-              'Animal weight',
-              'Safety margins',
-              'Regulatory guidelines'
-            ]).map((factor) =>
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 6),
-                      width: 4,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        factor,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.secondaryTextColor,
+                  'Drug pharmacokinetics',
+                  'Dosage and treatment duration',
+                  'Animal weight',
+                  'Safety margins',
+                  'Regulatory guidelines',
+                ])
+                .map(
+                  (factor) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(top: 6),
+                          width: 4,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            factor,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.secondaryTextColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            ).toList(),
+                  ),
+                )
+                .toList(),
           ],
         ),
       ),
@@ -1594,7 +1651,7 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
         children: [
           // Parameter Controls
           _buildParameterControls(),
-          
+
           // Content
           Expanded(
             child: _isLoading
@@ -1602,7 +1659,9 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(color: AppColors.primaryColor),
+                        CircularProgressIndicator(
+                          color: AppColors.primaryColor,
+                        ),
                         SizedBox(height: 16),
                         Text(
                           'Fetching MRL Analysis Data...',
@@ -1615,64 +1674,71 @@ class _MrlAnalysisScreenState extends State<MrlAnalysisScreen> {
                     ),
                   )
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                            const SizedBox(height: 16),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 32),
-                              child: Text(
-                                _error!,
-                                style: const TextStyle(color: Colors.red),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton(
-                              onPressed: _fetchAllData,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryColor,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text('Retry Analysis'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 64,
                         ),
-                      )
-                    : SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            // Overall Status
-                            _buildOverallStatusCard(),
-                            
-                            // MRL Analysis
-                            _buildMrlAnalysisSection(),
-                            
-                            // Compliance Check
-                            _buildComplianceCheckSection(),
-                            
-                            // Residue Predictions
-                            _buildResiduePredictionSection(),
-                            
-                            // Withdrawal Periods
-                            _buildWithdrawalPeriodSection(),
-                            
-                            // Animal Context
-                            _buildAnimalContextSection(),
-                            
-                            // Recommendations
-                            _buildRecommendationsSection(),
-                            
-                            const SizedBox(height: 32),
-                          ],
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _fetchAllData,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Retry Analysis'),
+                        ),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // Overall Status
+                        _buildOverallStatusCard(),
+
+                        // MRL Analysis
+                        _buildMrlAnalysisSection(),
+
+                        // Compliance Check
+                        _buildComplianceCheckSection(),
+
+                        // Residue Predictions
+                        _buildResiduePredictionSection(),
+
+                        // Withdrawal Periods
+                        _buildWithdrawalPeriodSection(),
+
+                        // Animal Context
+                        _buildAnimalContextSection(),
+
+                        // Recommendations
+                        _buildRecommendationsSection(),
+
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
           ),
         ],
       ),

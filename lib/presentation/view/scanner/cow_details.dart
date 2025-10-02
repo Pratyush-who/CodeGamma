@@ -27,7 +27,7 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
   Future<void> _fetchAnimalData() async {
     try {
       final response = await http.get(
-        Uri.parse('https://6cd1f87533a9.ngrok-free.app/animal/${widget.tagId}'),
+        Uri.parse('https://bfc211a032dc.ngrok-free.app/animal/${widget.tagId}'),
         headers: {'accept': 'application/json'},
       );
 
@@ -101,56 +101,54 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryColor,
+                ),
               ),
             )
           : error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        error!,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: AppColors.primaryTextColor,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            isLoading = true;
-                            error = null;
-                          });
-                          _fetchAnimalData();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                        ),
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    error!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppColors.primaryTextColor,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAnimalDataCard(),
-                      const SizedBox(height: 16),
-                      _buildAnalysisOptionsGrid(),
-                    ],
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        isLoading = true;
+                        error = null;
+                      });
+                      _fetchAnimalData();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryColor,
+                    ),
+                    child: const Text('Retry'),
                   ),
-                ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAnimalDataCard(),
+                  const SizedBox(height: 16),
+                  _buildAnalysisOptionsGrid(),
+                ],
+              ),
+            ),
     );
   }
 
@@ -216,7 +214,10 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
             _buildInfoRow('Breed', animalData!['basicInfo']['breed']),
             _buildInfoRow('Gender', animalData!['basicInfo']['gender']),
             _buildInfoRow('Farm ID', animalData!['basicInfo']['farmId']),
-            _buildInfoRow('Date of Admission', animalData!['basicInfo']['dateOfAdmission']),
+            _buildInfoRow(
+              'Date of Admission',
+              animalData!['basicInfo']['dateOfAdmission'],
+            ),
             const SizedBox(height: 16),
             _buildComplianceStatus(),
             const SizedBox(height: 16),
@@ -263,11 +264,13 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
   Widget _buildComplianceStatus() {
     final complianceStatus = animalData!['basicInfo']['complianceStatus'];
     final isCompliant = complianceStatus['status'] == 'OK';
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isCompliant ? AppColors.accentGreen.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+        color: isCompliant
+            ? AppColors.accentGreen.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isCompliant ? AppColors.accentGreen : Colors.red,
@@ -306,7 +309,7 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
   Widget _buildHealthStatus() {
     final healthStatus = animalData!['healthStatus'];
     final lastVisit = healthStatus['lastVisit'];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -388,7 +391,7 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
 
   Widget _buildRecordCounts() {
     final recordCounts = animalData!['recordCounts'];
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,9 +407,15 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildRecordCountItem('Prescriptions', recordCounts['prescriptions']),
+            _buildRecordCountItem(
+              'Prescriptions',
+              recordCounts['prescriptions'],
+            ),
             _buildRecordCountItem('Treatments', recordCounts['treatments']),
-            _buildRecordCountItem('Doctor Visits', recordCounts['doctorVisits']),
+            _buildRecordCountItem(
+              'Doctor Visits',
+              recordCounts['doctorVisits'],
+            ),
             _buildRecordCountItem('History', recordCounts['historyEntries']),
           ],
         ),
@@ -494,7 +503,9 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
               AppColors.primaryColor,
               () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Health Reports feature coming soon!')),
+                  const SnackBar(
+                    content: Text('Health Reports feature coming soon!'),
+                  ),
                 );
               },
             ),
@@ -528,10 +539,7 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
               offset: const Offset(0, 2),
             ),
           ],
-          border: Border.all(
-            color: color.withOpacity(0.2),
-            width: 1,
-          ),
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,11 +550,7 @@ class _CowDetailsPageState extends State<CowDetailsPage> {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
+              child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 12),
             Text(
@@ -594,7 +598,13 @@ class _MRLAnalyzerPageState extends State<MRLAnalyzerPage> {
   bool isLoading = false;
   String? error;
 
-  final List<String> tissueOptions = ['muscle', 'milk', 'eggs', 'liver', 'kidney'];
+  final List<String> tissueOptions = [
+    'muscle',
+    'milk',
+    'eggs',
+    'liver',
+    'kidney',
+  ];
 
   Future<void> _analyzeMRL() async {
     setState(() {
@@ -604,7 +614,9 @@ class _MRLAnalyzerPageState extends State<MRLAnalyzerPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://6cd1f87533a9.ngrok-free.app/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$selectedTissue&days_since_treatment=$daysSinceTreatment'),
+        Uri.parse(
+          'https://bfc211a032dc.ngrok-free.app/api/v1/mrl/analyze/${widget.tagId}?target_tissue=$selectedTissue&days_since_treatment=$daysSinceTreatment',
+        ),
         headers: {'accept': 'application/json'},
       );
 
@@ -776,7 +788,10 @@ class _MRLAnalyzerPageState extends State<MRLAnalyzerPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             onChanged: (value) {
               daysSinceTreatment = int.tryParse(value) ?? 0;
@@ -840,11 +855,7 @@ class _MRLAnalyzerPageState extends State<MRLAnalyzerPage> {
         children: [
           const Row(
             children: [
-              Icon(
-                Icons.analytics,
-                color: AppColors.accentGreen,
-                size: 24,
-              ),
+              Icon(Icons.analytics, color: AppColors.accentGreen, size: 24),
               SizedBox(width: 8),
               Text(
                 'Analysis Results',
@@ -889,11 +900,7 @@ class _MRLAnalyzerPageState extends State<MRLAnalyzerPage> {
       ),
       child: Column(
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 48,
-          ),
+          const Icon(Icons.error_outline, color: Colors.red, size: 48),
           const SizedBox(height: 12),
           Text(
             error!,
@@ -955,11 +962,7 @@ class AmuAnalyzerPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.medication,
-                color: AppColors.secondaryGreen,
-                size: 64,
-              ),
+              Icon(Icons.medication, color: AppColors.secondaryGreen, size: 64),
               const SizedBox(height: 16),
               const Text(
                 'AMU Analyzer',
@@ -980,10 +983,7 @@ class AmuAnalyzerPage extends StatelessWidget {
               const SizedBox(height: 24),
               const Text(
                 'Antimicrobial Usage analysis and monitoring feature will be available soon.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.mutedTextColor,
-                ),
+                style: TextStyle(fontSize: 16, color: AppColors.mutedTextColor),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -1039,11 +1039,7 @@ class PrescriptionCheckerPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.assignment,
-                color: AppColors.darkGreen,
-                size: 64,
-              ),
+              Icon(Icons.assignment, color: AppColors.darkGreen, size: 64),
               const SizedBox(height: 16),
               const Text(
                 'Prescription Checker',
@@ -1064,10 +1060,7 @@ class PrescriptionCheckerPage extends StatelessWidget {
               const SizedBox(height: 24),
               const Text(
                 'Prescription verification and drug interaction checking feature will be available soon.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.mutedTextColor,
-                ),
+                style: TextStyle(fontSize: 16, color: AppColors.mutedTextColor),
                 textAlign: TextAlign.center,
               ),
             ],

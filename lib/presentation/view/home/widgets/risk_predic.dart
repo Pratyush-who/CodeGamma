@@ -21,10 +21,10 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
   String? _connectionStatus;
   bool _showDebugInfo = false;
 
-  // Base URL for API
-  static const String baseUrl = 'https://6cd1f87533a9.ngrok-free.app';
+  // Make ngrok URL configurable and add fallback
+  static const String baseUrl = 'https://bfc211a032dc.ngrok-free.app';
+  static const String fallbackUrl = 'http://localhost:8000'; // Add fallback URL
 
-  // Form Controllers
   final _sessionIdController = TextEditingController();
   final _ageController = TextEditingController();
   final _weightController = TextEditingController();
@@ -35,7 +35,6 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
   final _timeSinceLastTreatmentController = TextEditingController();
   final _previousTreatmentsController = TextEditingController();
 
-  // Dropdown values
   String? _animalType;
   String? _farmType;
   String? _vaccinationStatus;
@@ -131,14 +130,10 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController, 
-      curve: Curves.easeInOut,
-    ));
-    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
     // Start the animation - this was missing!
     _animationController.forward();
   }
@@ -158,54 +153,100 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
     super.dispose();
   }
 
+  // Improved connection test with better error handling
   Future<void> _testConnection() async {
     setState(() {
       _isTestingConnection = true;
       _connectionStatus = null;
     });
-    
-    try {
-      print('Testing connection to: $baseUrl');
-      
-      // Test basic connectivity first
-      final response = await http.get(
-        Uri.parse('$baseUrl/'),
-        headers: {'Accept': 'application/json'},
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Connection timeout after 10 seconds');
-        },
-      );
-      
-      print('Connection test response: ${response.statusCode}');
-      print('Response body: ${response.body}');
-      
-      if (response.statusCode == 200 || response.statusCode == 404 || response.statusCode == 405) {
-        // 404 or 405 means server is reachable but endpoint doesn't exist for GET
-        setState(() {
-          _connectionStatus = 'Server is reachable! Status: ${response.statusCode}';
-        });
-      } else {
-        setState(() {
-          _connectionStatus = 'Server responded with status: ${response.statusCode}';
-        });
+
+    // List of URLs to test
+    final urlsToTest = [baseUrl, fallbackUrl];
+
+    for (String url in urlsToTest) {
+      try {
+        print('Testing connection to: $url');
+
+        final response = await http
+            .get(
+              Uri.parse('$url/health'), // Try health endpoint first
+              headers: {
+                'Accept': 'application/json',
+                'ngrok-skip-browser-warning':
+                    'true', // Skip ngrok browser warning
+              },
+            )
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                throw Exception('Connection timeout after 10 seconds');
+              },
+            );
+
+        print('Response from $url: ${response.statusCode}');
+        print('Response body: ${response.body}');
+
+        if (response.statusCode >= 200 && response.statusCode < 500) {
+          setState(() {
+            _connectionStatus =
+                '✅ Server reachable at $url\nStatus: ${response.statusCode}';
+          });
+          return; // Success, exit the loop
+        }
+      } catch (e) {
+        print('Failed to connect to $url: $e');
+        // Try root endpoint as fallback
+        try {
+          final response = await http
+              .get(
+                Uri.parse('$url/'),
+                headers: {
+                  'Accept': 'application/json',
+                  'ngrok-skip-browser-warning': 'true',
+                },
+              )
+              .timeout(const Duration(seconds: 10));
+
+          if (response.statusCode >= 200 && response.statusCode < 500) {
+            setState(() {
+              _connectionStatus =
+                  '✅ Server reachable at $url\nStatus: ${response.statusCode}';
+            });
+            return;
+          }
+        } catch (e2) {
+          print('Root endpoint also failed for $url: $e2');
+        }
       }
-    } catch (e) {
-      print('Connection test failed: $e');
-      setState(() {
-        _connectionStatus = 'Connection failed: $e\n\nTroubleshooting:\n• Check if server is running\n• Verify URL: $baseUrl\n• Check network connection';
-      });
-    } finally {
-      setState(() {
-        _isTestingConnection = false;
-      });
     }
+
+    // If all URLs failed
+    setState(() {
+      _connectionStatus =
+          '''
+❌ All connection attempts failed
+
+Tested URLs:
+${urlsToTest.map((url) => '• $url').join('\n')}
+
+Troubleshooting:
+• Check if server is running
+• Verify ngrok tunnel is active
+• Check network connection
+• Try VPN if behind firewall
+• Check server logs
+      ''';
+    });
+
+    setState(() {
+      _isTestingConnection = false;
+    });
   }
 
   void _fillDummyData() {
     setState(() {
-      _sessionIdController.text = 'SESSION-2025-001';
+      _sessionIdController.text =
+          'SESSION-${DateTime.now().millisecondsSinceEpoch}'; // Make unique
       _ageController.text = '4';
       _weightController.text = '620';
       _farmSizeController.text = '75';
@@ -252,8 +293,15 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
     });
   }
 
+  // Improved prediction function with better error handling and validation
   Future<void> _predictRisk() async {
     if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields correctly'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -264,22 +312,48 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
     });
 
     try {
+      // Validate numeric inputs
+      final age = int.tryParse(_ageController.text);
+      final weight = int.tryParse(_weightController.text);
+      final farmSize = int.tryParse(_farmSizeController.text);
+      final previousInfections = int.tryParse(
+        _previousInfectionsController.text,
+      );
+      final treatmentDuration = int.tryParse(_treatmentDurationController.text);
+      final dosage = int.tryParse(_dosageController.text);
+      final timeSinceLastTreatment = int.tryParse(
+        _timeSinceLastTreatmentController.text,
+      );
+      final previousTreatments = int.tryParse(
+        _previousTreatmentsController.text,
+      );
+
+      if (age == null ||
+          weight == null ||
+          farmSize == null ||
+          previousInfections == null ||
+          treatmentDuration == null ||
+          dosage == null ||
+          timeSinceLastTreatment == null ||
+          previousTreatments == null) {
+        throw Exception('Invalid numeric input values');
+      }
+
       final requestBody = {
         "session_id": _sessionIdController.text,
         "metadata": {
           "note": "Risk prediction request",
           "timestamp": DateTime.now().toIso8601String(),
+          "app_version": "1.0.0", // Add app version
         },
-        "age": int.parse(_ageController.text),
-        "weight": int.parse(_weightController.text),
-        "farm_size": int.parse(_farmSizeController.text),
-        "previous_infections": int.parse(_previousInfectionsController.text),
-        "treatment_duration": int.parse(_treatmentDurationController.text),
-        "dosage": int.parse(_dosageController.text),
-        "time_since_last_treatment": int.parse(
-          _timeSinceLastTreatmentController.text,
-        ),
-        "previous_treatments": int.parse(_previousTreatmentsController.text),
+        "age": age,
+        "weight": weight,
+        "farm_size": farmSize,
+        "previous_infections": previousInfections,
+        "treatment_duration": treatmentDuration,
+        "dosage": dosage,
+        "time_since_last_treatment": timeSinceLastTreatment,
+        "previous_treatments": previousTreatments,
         "animal_type": _animalType,
         "farm_type": _farmType,
         "vaccination_status": _vaccinationStatus,
@@ -291,88 +365,86 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
         "resistance_pattern": _resistancePattern,
       };
 
-      final url = '$baseUrl/api/v1/risk/predict';
-      
-      print('Making API request to: $url');
-      print('Request body: ${JsonEncoder.withIndent('  ').convert(requestBody)}');
+      // Try multiple URLs
+      final urlsToTry = [
+        '$baseUrl/api/v1/risk/predict',
+        '$fallbackUrl/api/v1/risk/predict',
+        '$baseUrl/predict', // Alternative endpoint
+        '$fallbackUrl/predict',
+      ];
 
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: json.encode(requestBody),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Request timeout after 30 seconds');
-        },
-      );
+      http.Response? successResponse;
+      String? lastError;
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
+      for (String url in urlsToTry) {
         try {
-          final responseData = json.decode(response.body);
+          print('Trying API request to: $url');
+
+          final response = await http
+              .post(
+                Uri.parse(url),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'ngrok-skip-browser-warning': 'true', // Skip ngrok warning
+                },
+                body: json.encode(requestBody),
+              )
+              .timeout(
+                const Duration(seconds: 30),
+                onTimeout: () {
+                  throw Exception('Request timeout after 30 seconds');
+                },
+              );
+
+          print('Response from $url - Status: ${response.statusCode}');
+
+          if (response.statusCode == 200) {
+            successResponse = response;
+            break;
+          } else {
+            lastError =
+                'HTTP ${response.statusCode} from $url: ${response.body}';
+          }
+        } catch (e) {
+          lastError = 'Failed to connect to $url: $e';
+          print(lastError);
+        }
+      }
+
+      if (successResponse != null) {
+        try {
+          final responseData = json.decode(successResponse.body);
           setState(() {
             _predictionResult = responseData;
           });
+
+          // Show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Risk prediction completed successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         } catch (parseError) {
           print('JSON parse error: $parseError');
           setState(() {
-            _errorMessage = 'Response parsing failed: $parseError\nRaw response: ${response.body}';
+            _errorMessage =
+                'Response parsing failed: $parseError\nRaw response: ${successResponse?.body}';
           });
         }
       } else {
-        String detailedError = 'HTTP ${response.statusCode}';
-        
-        switch (response.statusCode) {
-          case 400:
-            detailedError += ' - Bad Request: Invalid input data';
-            break;
-          case 401:
-            detailedError += ' - Unauthorized: Check authentication';
-            break;
-          case 404:
-            detailedError += ' - Not Found: Endpoint may not exist';
-            break;
-          case 422:
-            detailedError += ' - Validation Error: Check input format';
-            break;
-          case 500:
-            detailedError += ' - Internal Server Error: Backend issue';
-            break;
-          case 502:
-            detailedError += ' - Bad Gateway: Server/proxy issue';
-            break;
-          case 503:
-            detailedError += ' - Service Unavailable: Server down';
-            break;
-          case 504:
-            detailedError += ' - Gateway Timeout: Server took too long';
-            break;
-        }
-        
         setState(() {
-          _errorMessage = '$detailedError\n\nFull URL: $url\n\nResponse: ${response.body}';
+          _errorMessage = lastError ?? 'All API endpoints failed';
         });
       }
     } catch (e) {
-      print('Exception: $e');
-      String detailedError = 'Request failed: $e';
-      
-      if (e.toString().contains('SocketException')) {
-        detailedError += '\n\nNetwork Issue: Check internet connection and server availability';
-      } else if (e.toString().contains('timeout')) {
-        detailedError += '\n\nTimeout: Server took too long to respond';
-      } else if (e.toString().contains('FormatException')) {
-        detailedError += '\n\nFormat Error: Invalid JSON in response';
-      }
-      
+      print('Exception in _predictRisk: $e');
       setState(() {
-        _errorMessage = detailedError;
+        _errorMessage =
+            'Request failed: $e\n\nPlease check:\n• Network connection\n• Server availability\n• Input data format';
       });
     } finally {
       setState(() {
@@ -425,7 +497,18 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primaryColor,
+                  width: 2,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -480,7 +563,10 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primaryColor, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primaryColor,
+                  width: 2,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -503,273 +589,245 @@ class _RiskPredictionScreenState extends State<RiskPredictionScreen>
   }
 
   Widget _buildResultCard() {
-  if (_predictionResult == null && _errorMessage == null) return Container();
+    if (_predictionResult == null && _errorMessage == null) return Container();
 
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 20),
-    decoration: BoxDecoration(
-      color: AppColors.surfaceColor,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: _errorMessage != null
-                  ? [Colors.red.shade400, Colors.red.shade600]
-                  : [AppColors.primaryColor, AppColors.primaryColorLight],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.whiteColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  _errorMessage != null
-                      ? Icons.error_outline
-                      : Icons.analytics,
-                  color: AppColors.whiteColor,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _errorMessage != null
-                          ? 'Prediction Failed'
-                          : 'Risk Analysis Complete',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.whiteColor,
-                      ),
-                    ),
-                    Text(
-                      _errorMessage != null
-                          ? 'Unable to process request'
-                          : 'AMR resistance prediction results',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.whiteColor.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Content
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: _errorMessage != null
-              ? _buildErrorContent()
-              : _buildSuccessContent(),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildErrorContent() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.red.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.red.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.warning_amber, color: Colors.red, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Error Details',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _errorMessage!,
-              style: TextStyle(
-                color: Colors.red.shade700,
-                fontSize: 14,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
-      const SizedBox(height: 16),
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.blue.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.help_outline, color: Colors.blue, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Troubleshooting Tips',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '• Check your internet connection\n'
-              '• Verify all form fields are filled correctly\n'
-              '• Try the "Test Connection" button\n'
-              '• Contact support if the issue persists',
-              style: TextStyle(
-                color: Colors.blue,
-                fontSize: 14,
-                height: 1.5,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _errorMessage != null
+                    ? [Colors.red.shade400, Colors.red.shade600]
+                    : [AppColors.primaryColor, AppColors.primaryColorLight],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
             ),
-          ],
-        ),
-      ),
-    ],
-  );
-}
-
-Widget _buildSuccessContent() {
-  final result = _predictionResult!;
-  
-  // Extract key information from the API response
-  final riskScore = result['risk_score'] ?? result['prediction'] ?? 'N/A';
-  final riskLevel = _getRiskLevel(riskScore);
-  final confidence = result['confidence'] ?? result['probability'] ?? 'N/A';
-  final recommendations = result['recommendations'] ?? [];
-  final factors = result['risk_factors'] ?? result['factors'] ?? [];
-  final sessionId = result['session_id'] ?? 'N/A';
-  final timestamp = result['timestamp'] ?? DateTime.now().toIso8601String();
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Risk Score Section
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: _getRiskGradientColors(riskLevel),
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Row(
               children: [
-                const Text(
-                  'Risk Assessment',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.whiteColor,
-                  ),
-                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppColors.whiteColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    riskLevel.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.whiteColor,
-                    ),
+                  child: Icon(
+                    _errorMessage != null
+                        ? Icons.error_outline
+                        : Icons.analytics,
+                    color: AppColors.whiteColor,
+                    size: 24,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Risk Score',
-                        style: TextStyle(
-                          color: AppColors.whiteColor,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
                       Text(
-                        riskScore.toString(),
+                        _errorMessage != null
+                            ? 'Prediction Failed'
+                            : 'Risk Analysis Complete',
                         style: const TextStyle(
-                          fontSize: 28,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppColors.whiteColor,
+                        ),
+                      ),
+                      Text(
+                        _errorMessage != null
+                            ? 'Unable to process request'
+                            : 'AMR resistance prediction results',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.whiteColor.withOpacity(0.9),
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (confidence != 'N/A')
+              ],
+            ),
+          ),
+
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: _errorMessage != null
+                ? _buildErrorContent()
+                : _buildSuccessContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.red.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.red, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Error Details',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.help_outline, color: Colors.blue, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Troubleshooting Tips',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '• Check your internet connection\n'
+                '• Verify all form fields are filled correctly\n'
+                '• Try the "Test Connection" button\n'
+                '• Contact support if the issue persists',
+                style: TextStyle(color: Colors.blue, fontSize: 14, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuccessContent() {
+    final result = _predictionResult!;
+
+    // Extract key information from the API response
+    final riskScore = result['risk_score'] ?? result['prediction'] ?? 'N/A';
+    final riskLevel = _getRiskLevel(riskScore);
+    final confidence = result['confidence'] ?? result['probability'] ?? 'N/A';
+    final recommendations = result['recommendations'] ?? [];
+    final factors = result['risk_factors'] ?? result['factors'] ?? [];
+    final sessionId = result['session_id'] ?? 'N/A';
+    final timestamp = result['timestamp'] ?? DateTime.now().toIso8601String();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Risk Score Section
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: _getRiskGradientColors(riskLevel),
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Risk Assessment',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.whiteColor,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.whiteColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      riskLevel.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.whiteColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Confidence',
+                          'Risk Score',
                           style: TextStyle(
                             color: AppColors.whiteColor,
                             fontSize: 14,
@@ -777,9 +835,9 @@ Widget _buildSuccessContent() {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${(double.tryParse(confidence.toString()) ?? 0.0) * 100}%',
+                          riskScore.toString(),
                           style: const TextStyle(
-                            fontSize: 20,
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: AppColors.whiteColor,
                           ),
@@ -787,176 +845,210 @@ Widget _buildSuccessContent() {
                       ],
                     ),
                   ),
-              ],
-            ),
-          ],
-        ),
-      ),
-
-      const SizedBox(height: 20),
-
-      // Risk Factors Section
-      if (factors.isNotEmpty) ...[
-        const Text(
-          'Key Risk Factors',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryColor,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...factors.take(5).map<Widget>((factor) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.lightGreen.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppColors.primaryColor.withOpacity(0.2),
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.warning_amber_outlined,
-                color: AppColors.primaryColor,
-                size: 16,
+                  if (confidence != 'N/A')
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Confidence',
+                            style: TextStyle(
+                              color: AppColors.whiteColor,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${(double.tryParse(confidence.toString()) ?? 0.0) * 100}%',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.whiteColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  factor.toString(),
-                  style: const TextStyle(
-                    color: AppColors.primaryTextColor,
-                    fontSize: 14,
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Risk Factors Section
+        if (factors.isNotEmpty) ...[
+          const Text(
+            'Key Risk Factors',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...factors
+              .take(5)
+              .map<Widget>(
+                (factor) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGreen.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.primaryColor.withOpacity(0.2),
+                    ),
                   ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_outlined,
+                        color: AppColors.primaryColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          factor.toString(),
+                          style: const TextStyle(
+                            color: AppColors.primaryTextColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          const SizedBox(height: 20),
+        ],
+
+        // Recommendations Section
+        if (recommendations.isNotEmpty) ...[
+          const Text(
+            'Recommendations',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...recommendations
+              .take(5)
+              .map<Widget>(
+                (recommendation) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGreen.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.accentGreen.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.lightbulb_outline,
+                        color: AppColors.accentGreen,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          recommendation.toString(),
+                          style: const TextStyle(
+                            color: AppColors.primaryTextColor,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          const SizedBox(height: 20),
+        ],
+
+        // Session Info
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Session Information',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Session ID: $sessionId',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.mutedTextColor,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              Text(
+                'Generated: ${_formatTimestamp(timestamp)}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.mutedTextColor,
                 ),
               ),
             ],
           ),
-        )).toList(),
-        const SizedBox(height: 20),
+        ),
       ],
-
-      // Recommendations Section
-      if (recommendations.isNotEmpty) ...[
-        const Text(
-          'Recommendations',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryColor,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...recommendations.take(5).map<Widget>((recommendation) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.accentGreen.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: AppColors.accentGreen.withOpacity(0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.lightbulb_outline,
-                color: AppColors.accentGreen,
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  recommendation.toString(),
-                  style: const TextStyle(
-                    color: AppColors.primaryTextColor,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        )).toList(),
-        const SizedBox(height: 20),
-      ],
-
-      // Session Info
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Session Information',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryTextColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Session ID: $sessionId',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.mutedTextColor,
-                fontFamily: 'monospace',
-              ),
-            ),
-            Text(
-              'Generated: ${_formatTimestamp(timestamp)}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.mutedTextColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
-}
-
-String _getRiskLevel(dynamic riskScore) {
-  if (riskScore == 'N/A') return 'Unknown';
-  
-  final score = double.tryParse(riskScore.toString()) ?? 0.0;
-  
-  if (score >= 0.8) return 'High';
-  if (score >= 0.6) return 'Moderate';
-  if (score >= 0.4) return 'Low';
-  return 'Very Low';
-}
-
-List<Color> _getRiskGradientColors(String riskLevel) {
-  switch (riskLevel.toLowerCase()) {
-    case 'high':
-      return [Colors.red.shade400, Colors.red.shade600];
-    case 'moderate':
-      return [Colors.orange.shade400, Colors.orange.shade600];
-    case 'low':
-      return [Colors.yellow.shade400, Colors.yellow.shade600];
-    case 'very low':
-      return [Colors.green.shade400, Colors.green.shade600];
-    default:
-      return [Colors.grey.shade400, Colors.grey.shade600];
+    );
   }
-}
 
-String _formatTimestamp(String timestamp) {
-  try {
-    final dateTime = DateTime.parse(timestamp);
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-  } catch (e) {
-    return 'Just now';
+  String _getRiskLevel(dynamic riskScore) {
+    if (riskScore == 'N/A') return 'Unknown';
+
+    final score = double.tryParse(riskScore.toString()) ?? 0.0;
+
+    if (score >= 0.8) return 'High';
+    if (score >= 0.6) return 'Moderate';
+    if (score >= 0.4) return 'Low';
+    return 'Very Low';
   }
-}
+
+  List<Color> _getRiskGradientColors(String riskLevel) {
+    switch (riskLevel.toLowerCase()) {
+      case 'high':
+        return [Colors.red.shade400, Colors.red.shade600];
+      case 'moderate':
+        return [Colors.orange.shade400, Colors.orange.shade600];
+      case 'low':
+        return [Colors.yellow.shade400, Colors.yellow.shade600];
+      case 'very low':
+        return [Colors.green.shade400, Colors.green.shade600];
+      default:
+        return [Colors.grey.shade400, Colors.grey.shade600];
+    }
+  }
+
+  String _formatTimestamp(String timestamp) {
+    try {
+      final dateTime = DateTime.parse(timestamp);
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Just now';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

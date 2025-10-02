@@ -106,15 +106,12 @@ class _PrescriptionAnalysisScreenState
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse(
-          'https://6cd1f87533a9.ngrok-free.app/prescription/upload',
-        ),
+        Uri.parse('https://bfc211a032dc.ngrok-free.app/prescription/upload'),
       );
 
       final file = File(_selectedImage!.path);
       final bytes = await file.readAsBytes();
 
-      // Create multipart file with proper content type
       final multipartFile = http.MultipartFile.fromBytes(
         'image',
         bytes,

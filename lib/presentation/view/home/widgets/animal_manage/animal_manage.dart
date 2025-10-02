@@ -32,7 +32,9 @@ class _AnimalManagementScreenState extends State<AnimalManagementScreen> {
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse('https://6cd1f87533a9.ngrok-free.app/database/animals?limit=1000'),
+        Uri.parse(
+          'https://bfc211a032dc.ngrok-free.app/database/animals?limit=1000',
+        ),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -52,7 +54,7 @@ class _AnimalManagementScreenState extends State<AnimalManagementScreen> {
   Future<void> _addAnimal(Animal animal) async {
     try {
       final response = await http.post(
-        Uri.parse('https://6cd1f87533a9.ngrok-free.app/database/animals'),
+        Uri.parse('https://bfc211a032dc.ngrok-free.app/database/animals'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(animal.toJson()),
       );
@@ -253,10 +255,7 @@ class AnimalCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${animal.breed} • ${animal.gender}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
                   ],
                 ),
@@ -327,7 +326,9 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: active ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+        color: active
+            ? Colors.green.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -458,9 +459,13 @@ class _AddAnimalDialogState extends State<AddAnimalDialog> {
                           border: OutlineInputBorder(),
                         ),
                         items: ['Male', 'Female'].map((gender) {
-                          return DropdownMenuItem(value: gender, child: Text(gender));
+                          return DropdownMenuItem(
+                            value: gender,
+                            child: Text(gender),
+                          );
                         }).toList(),
-                        onChanged: (value) => setState(() => _selectedGender = value!),
+                        onChanged: (value) =>
+                            setState(() => _selectedGender = value!),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -480,17 +485,20 @@ class _AddAnimalDialogState extends State<AddAnimalDialog> {
                       SwitchListTile(
                         title: const Text('Insurance'),
                         value: _insurance,
-                        onChanged: (value) => setState(() => _insurance = value),
+                        onChanged: (value) =>
+                            setState(() => _insurance = value),
                       ),
                       SwitchListTile(
                         title: const Text('Vaccination'),
                         value: _vaccination,
-                        onChanged: (value) => setState(() => _vaccination = value),
+                        onChanged: (value) =>
+                            setState(() => _vaccination = value),
                       ),
                       SwitchListTile(
                         title: const Text('Artificial Insemination'),
                         value: _artificialInsemination,
-                        onChanged: (value) => setState(() => _artificialInsemination = value),
+                        onChanged: (value) =>
+                            setState(() => _artificialInsemination = value),
                       ),
                     ],
                   ),
@@ -563,7 +571,9 @@ class Animal {
       vaccination: json['vaccination'] ?? false,
       artificialInsemination: json['artificialInsemination'] ?? false,
       summary: json['summary'] ?? '',
-      complianceStatus: ComplianceStatus.fromJson(json['complianceStatus'] ?? {}),
+      complianceStatus: ComplianceStatus.fromJson(
+        json['complianceStatus'] ?? {},
+      ),
     );
   }
 

@@ -26,7 +26,7 @@ class _AnimalDataScreenState extends State<AnimalDataScreen> {
   Future<void> _fetchAnimalData() async {
     try {
       final response = await http.get(
-        Uri.parse('https://6cd1f87533a9.ngrok-free.app/animal/${widget.tagId}'),
+        Uri.parse('https://bfc211a032dc.ngrok-free.app/animal/${widget.tagId}'),
         headers: {'accept': 'application/json'},
       );
 
@@ -119,285 +119,314 @@ class _AnimalDataScreenState extends State<AnimalDataScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryColor))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryColor),
+            )
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.red, size: 64),
-                      const SizedBox(height: 16),
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _isLoading = true;
-                            _error = null;
-                          });
-                          _fetchAnimalData();
-                        },
-                        child: const Text('Retry'),
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 16),
+                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _isLoading = true;
+                        _error = null;
+                      });
+                      _fetchAnimalData();
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.primaryColor, AppColors.accentGreen],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.pets,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Animal Overview',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'Tag: ${widget.tagId}',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Basic Information
+                  const Text(
+                    'Basic Information',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryTextColor,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  if (_animalData?['basicInfo'] != null) ...[
+                    _buildInfoCard(
+                      'Breed',
+                      _animalData!['basicInfo']['breed'] ?? 'N/A',
+                      Icons.pets,
+                    ),
+                    _buildInfoCard(
+                      'Gender',
+                      _animalData!['basicInfo']['gender'] ?? 'N/A',
+                      Icons.male,
+                    ),
+                    _buildInfoCard(
+                      'Farm ID',
+                      _animalData!['basicInfo']['farmId'] ?? 'N/A',
+                      Icons.home,
+                    ),
+                    _buildInfoCard(
+                      'Date of Admission',
+                      _animalData!['basicInfo']['dateOfAdmission'] ?? 'N/A',
+                      Icons.calendar_today,
+                    ),
+                  ],
+
+                  const SizedBox(height: 20),
+
+                  // Health Status
+                  const Text(
+                    'Health Status',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryTextColor,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  if (_animalData?['healthStatus'] != null) ...[
+                    _buildInfoCard(
+                      'Vaccination Status',
+                      _animalData!['healthStatus']['vaccination'] == true
+                          ? 'Completed'
+                          : 'Pending',
+                      Icons.vaccines,
+                    ),
+                    _buildInfoCard(
+                      'Insurance Status',
+                      _animalData!['healthStatus']['insurance'] == true
+                          ? 'Covered'
+                          : 'Not Covered',
+                      Icons.shield,
+                    ),
+                    if (_animalData!['healthStatus']['lastVisit'] != null) ...[
+                      _buildInfoCard(
+                        'Last Visit Date',
+                        _animalData!['healthStatus']['lastVisit']['date'] ??
+                            'N/A',
+                        Icons.medical_services,
+                      ),
+                      _buildInfoCard(
+                        'Doctor',
+                        _animalData!['healthStatus']['lastVisit']['doctorName'] ??
+                            'N/A',
+                        Icons.person,
+                      ),
+                      _buildInfoCard(
+                        'Purpose',
+                        _animalData!['healthStatus']['lastVisit']['purpose'] ??
+                            'N/A',
+                        Icons.description,
                       ),
                     ],
+                  ],
+
+                  const SizedBox(height: 20),
+
+                  // Record Counts
+                  const Text(
+                    'Records Summary',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryTextColor,
+                    ),
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header Card
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppColors.primaryColor, AppColors.accentGreen],
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(Icons.pets, color: Colors.white, size: 24),
+                  const SizedBox(height: 16),
+
+                  if (_animalData?['recordCounts'] != null) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightGreen,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Animal Overview',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '${_animalData!['recordCounts']['prescriptions'] ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryColor,
                                   ),
-                                  Text(
-                                    'Tag: ${widget.tagId}',
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontSize: 14,
-                                      fontFamily: 'monospace',
-                                    ),
+                                ),
+                                const Text(
+                                  'Prescriptions',
+                                  style: TextStyle(
+                                    color: AppColors.secondaryTextColor,
+                                    fontSize: 12,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Basic Information
-                      const Text(
-                        'Basic Information',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      if (_animalData?['basicInfo'] != null) ...[
-                        _buildInfoCard('Breed', _animalData!['basicInfo']['breed'] ?? 'N/A', Icons.pets),
-                        _buildInfoCard('Gender', _animalData!['basicInfo']['gender'] ?? 'N/A', Icons.male),
-                        _buildInfoCard('Farm ID', _animalData!['basicInfo']['farmId'] ?? 'N/A', Icons.home),
-                        _buildInfoCard('Date of Admission', _animalData!['basicInfo']['dateOfAdmission'] ?? 'N/A', Icons.calendar_today),
-                      ],
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Health Status
-                      const Text(
-                        'Health Status',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      if (_animalData?['healthStatus'] != null) ...[
-                        _buildInfoCard(
-                          'Vaccination Status', 
-                          _animalData!['healthStatus']['vaccination'] == true ? 'Completed' : 'Pending',
-                          Icons.vaccines
-                        ),
-                        _buildInfoCard(
-                          'Insurance Status', 
-                          _animalData!['healthStatus']['insurance'] == true ? 'Covered' : 'Not Covered',
-                          Icons.shield
-                        ),
-                        if (_animalData!['healthStatus']['lastVisit'] != null) ...[
-                          _buildInfoCard(
-                            'Last Visit Date', 
-                            _animalData!['healthStatus']['lastVisit']['date'] ?? 'N/A',
-                            Icons.medical_services
                           ),
-                          _buildInfoCard(
-                            'Doctor', 
-                            _animalData!['healthStatus']['lastVisit']['doctorName'] ?? 'N/A',
-                            Icons.person
-                          ),
-                          _buildInfoCard(
-                            'Purpose', 
-                            _animalData!['healthStatus']['lastVisit']['purpose'] ?? 'N/A',
-                            Icons.description
-                          ),
-                        ],
-                      ],
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Record Counts
-                      const Text(
-                        'Records Summary',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryTextColor,
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      if (_animalData?['recordCounts'] != null) ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.lightGreen,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '${_animalData!['recordCounts']['prescriptions'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryColor,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'Prescriptions',
-                                      style: TextStyle(
-                                        color: AppColors.secondaryTextColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.mintGreen,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.mintGreen,
-                                  borderRadius: BorderRadius.circular(12),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '${_animalData!['recordCounts']['doctorVisits'] ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryColor,
+                                  ),
                                 ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '${_animalData!['recordCounts']['doctorVisits'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryColor,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'Doctor Visits',
-                                      style: TextStyle(
-                                        color: AppColors.secondaryTextColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
+                                const Text(
+                                  'Doctor Visits',
+                                  style: TextStyle(
+                                    color: AppColors.secondaryTextColor,
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.accentGreen.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '${_animalData!['recordCounts']['treatments'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryColor,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'Treatments',
-                                      style: TextStyle(
-                                        color: AppColors.secondaryTextColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.secondaryGreen.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '${_animalData!['recordCounts']['historyEntries'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryColor,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'History Entries',
-                                      style: TextStyle(
-                                        color: AppColors.secondaryTextColor,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
-                    ],
-                  ),
-                ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '${_animalData!['recordCounts']['treatments'] ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                ),
+                                const Text(
+                                  'Treatments',
+                                  style: TextStyle(
+                                    color: AppColors.secondaryTextColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '${_animalData!['recordCounts']['historyEntries'] ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryColor,
+                                  ),
+                                ),
+                                const Text(
+                                  'History Entries',
+                                  style: TextStyle(
+                                    color: AppColors.secondaryTextColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 }
